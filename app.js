@@ -273,10 +273,34 @@ function setInView(key){
 }
 
 // Bloque de código de solo lectura con números de línea (mismo aspecto que el editor)
-function codeBlock(code){
-  const lines=String(code).replace(/\s+$/,"").split("\n"); // sin saltos ni espacios al final
-  return el("div",{class:"code-block"},el("ol",{class:"code-block__gutter","aria-hidden":"true"},lines.map((_,k)=>el("li",{},String(k+1)))),
-    el("pre",{class:"code-block__code"},el("code",{},lines.join("\n"))));
+// Bloque de código de ejemplo (§21): barra con la etiqueta y "Copiar"; resaltado como el editor, sin números de línea.
+// Tras copiar aparece "Probar en el editor", que lo pega en el ejercicio activo de Práctica.
+function codeBlock(code,label){
+  const src=String(code).replace(/\s+$/,""); // sin saltos ni espacios al final
+  const codeEl=el("code",{html:highlightPy(src).join("\n")});
+  const tools=el("span",{class:"code-block__tools"});
+  const tryBtn=el("button",{class:"btn-copy code-block__try",type:"button",hidden:"",onclick:()=>tryInEditor(src,tools,tryBtn)},"Probar en el editor");
+  tools.append(copyButton(()=>src,{selectEl:()=>codeEl,onCopied:()=>{tryBtn.hidden=false}}),tryBtn);
+  return el("div",{class:"code-block"},
+    el("div",{class:"code-block__bar"},el("span",{class:"code-block__label",html:label?md(label):"Ejemplo"}),tools),
+    el("pre",{class:"code-block__code"},codeEl));
+}
+// Editor del ejercicio activo de Práctica (lo registra practicePanel)
+let activeEditor=null;
+function tryInEditor(src,tools,btn){
+  const paste=()=>{const a=activeEditor;a.ed.value=src;codes[a.key]=src;store.set("cs50p-code",codes);
+    a.ed.el.scrollIntoView({block:"center",behavior:reducedMotion()?"auto":"smooth"});a.ed.focus()};
+  const ready=()=>activeEditor&&activeEditor.ed.el.isConnected;
+  if(!ready()){ // práctica plegada: se abre primero
+    openSections.add("practice");const old=document.getElementById("s-practice");if(old){old.replaceWith(buildPractice());refreshChrome()}
+  }
+  if(!ready())return;
+  if(activeEditor.ed.value===activeEditor.starter){paste();return}
+  // Ya escribiste algo: confirmación inline
+  const ask=el("span",{class:"code-block__ask",role:"group","aria-label":"Reemplazar tu código"},el("span",{},"¿Reemplazar tu código?"),
+    el("button",{class:"btn-copy",type:"button",onclick:()=>{ask.replaceWith(btn);paste()}},"Sí"),
+    el("button",{class:"btn-copy",type:"button",onclick:()=>{ask.replaceWith(btn);btn.focus()}},"No"));
+  btn.replaceWith(ask);ask.querySelector("button").focus();
 }
 
 // Contenido de cada sección
@@ -287,7 +311,7 @@ function sectionBody(key){
     case "jsToPy":return[el("table",{class:"js-py"},el("colgroup",{},el("col",{class:"js-py__code"}),el("col",{class:"js-py__code"}),el("col",{class:"js-py__note"})),el("thead",{},el("tr",{},el("th",{scope:"col"},"JS"),el("th",{scope:"col"},"Python"),el("th",{scope:"col"},"Ojo"))),
       el("tbody",{},w.jsToPy.map(r=>el("tr",{},el("td",{"data-label":"JS"},el("code",{},r.js)),el("td",{"data-label":"Python"},el("code",{},r.py)),el("td",{"data-label":"Ojo"},el("span",{html:md(r.note||"")}))))))];
     case "examples":return[
-      ...(w.examples||[]).map(e=>el("div",{class:"example"},e.label?el("p",{class:"example__label",html:md(e.label)}):null,codeBlock(e.code))),
+      ...(w.examples||[]).map(e=>codeBlock(e.code,e.label)),
       w.traps?.length?el("ul",{class:"traps"},w.traps.map(t=>el("li",{},el("span",{class:"traps__label"},"Trampa"),el("span",{html:md(t)})))):null];
     case "shorts":return[el("p",{class:"section-card__lead"},"Videos cortos de un solo tema. Míralos después de la clase y antes del problem set."),el("ul",{class:"shorts"},w.shorts.map((x,j)=>shortItem(x,j)))];
     case "quiz":return[el("div",{class:"quiz"},w.quiz.map((q,qi)=>quizQuestion(q,qi)))];
@@ -872,6 +896,7 @@ function practicePanel(p,j,hooks={}){
   const key=`${current}-${j}`,w=weeks[current];
   const ed=createEditor({value:codes[key]??p.starter,starter:p.starter,fileName:(snake(p.name)||"ejercicio")+".py",label:"Código Python: "+p.name,
     onChange:v=>{codes[key]=v;store.set("cs50p-code",codes)},onSubmit:()=>check.click()});
+  activeEditor={ed,key,starter:p.starter};
   const res=el("div",{class:"results-box","aria-live":"polite"});
   // La consola sustituye a los resultados mientras está abierta; "Comprobar" vuelve a los resultados
   let lastResults=null,cons=null;
