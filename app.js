@@ -11,7 +11,15 @@ if(!prefs.startedAt){const d=new Date();prefs.startedAt=[...(prefs.studyDays||[]
 const el=(t,a={},...c)=>{const n=document.createElement(t);for(const[k,v]of Object.entries(a)){if(v==null||v===false)continue;if(k==="class")n.className=v;else if(k==="html")n.innerHTML=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else n.setAttribute(k,v)}for(const x of c.flat()){if(x==null||x===false)continue;n.append(x.nodeType?x:document.createTextNode(x))}return n};
 // inline: `code` y **negrita**, escapando todo lo demás
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const md=s=>esc(s).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+// Code spans como en CommonMark: se abren y cierran con la misma cantidad de backticks, así `` `x` `` muestra `x` con sus backticks.
+// Un espacio a cada lado dentro del span se recorta. La negrita no se aplica dentro del código.
+const CODE_SPAN=/(`+)(?!`)([\s\S]*?[^`])\1(?!`)/g;
+const spanBody=b=>/^ [\s\S]* $/.test(b)&&b.trim()?b.slice(1,-1):b;
+const md=s=>{
+  const spans=[];
+  const t=esc(s).replace(CODE_SPAN,(m,ticks,body)=>{spans.push(`<code>${spanBody(body)}</code>`);return`\u0000${spans.length-1}\u0000`});
+  return t.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>").replace(/\u0000(\d+)\u0000/g,(m,i)=>spans[i]);
+};
 const pad2=n=>String(n).padStart(2,"0");
 const snake=s=>String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
 
@@ -183,7 +191,7 @@ function setInView(key){
 
 // Bloque de código de solo lectura con números de línea (mismo aspecto que el editor)
 function codeBlock(code){
-  const lines=String(code).replace(/\n$/,"").split("\n");
+  const lines=String(code).replace(/\s+$/,"").split("\n"); // sin saltos ni espacios al final
   return el("div",{class:"code-block"},el("ol",{class:"code-block__gutter","aria-hidden":"true"},lines.map((_,k)=>el("li",{},String(k+1)))),
     el("pre",{class:"code-block__code"},el("code",{},lines.join("\n"))));
 }
@@ -199,7 +207,7 @@ function sectionBody(key){
       ...(w.examples||[]).map(e=>el("div",{class:"example"},e.label?el("p",{class:"example__label",html:md(e.label)}):null,codeBlock(e.code))),
       w.traps?.length?el("ul",{class:"traps"},w.traps.map(t=>el("li",{},el("span",{class:"traps__label"},"Trampa"),el("span",{html:md(t)})))):null];
     case "quiz":return[el("div",{class:"quiz"},w.quiz.map((q,qi)=>quizQuestion(q,qi)))];
-    case "pset":return[el("div",{class:"pset"},w.pset.map((p,j)=>psetItem(p,j))),w.submit?el("p",{class:"pset__submit",html:md(w.submit)}):null];
+    case "pset":return[w.submit?el("p",{class:"pset__submit",html:md(w.submit)}):null,el("div",{class:"pset"},w.pset.map((p,j)=>psetItem(p,j)))];
     case "project":return[el("p",{class:"project__goal",html:md(w.project.goal||"")}),w.project.steps?.length?el("ol",{class:"section-list"},w.project.steps.map(x=>el("li",{html:md(x)}))):null];
   }
 }
@@ -281,7 +289,19 @@ function weekBanner(i,{animate=false}={}){
 
 // Pregunta de quiz (1g fila 3)
 const LETTERS="ABCD";
-const isCodeOption=o=>/`/.test(o)||!/\s/.test(o.trim());
+// Una opción es código si es un solo code span, un literal de string (con o sin prefijo f/r/b), concatena strings con +,
+// o si todas sus palabras parecen código (dígitos o símbolos, minúscula inicial, camelCase, True/False/None) y además
+// tiene símbolos o como mucho 2 palabras. Las palabras con tilde o conectores del castellano nunca cuentan como código.
+const wholeSpan=o=>{const m=o.trim().match(/^(`+)(?!`)([\s\S]*?[^`])\1$/);return m&&!m[2].includes(m[1])?spanBody(m[2]):null};
+const ES_WORDS=new Set("al con de del el en es la las lo los por que se sin su un una y".split(" "));
+const codeToken=w=>!ES_WORDS.has(w.toLowerCase())&&!/[áéíóúüñ¿¡]/i.test(w)&&(/[^A-Za-z]/.test(w)||/^[a-z]/.test(w)||/[a-z][A-Z]/.test(w)||/^(True|False|None)$/.test(w));
+function isCodeOption(o){
+  const t=o.trim();
+  if(wholeSpan(t)!=null||/^[rbfu]{0,2}(["'])[\s\S]*\1$/i.test(t)||/["']\s*\+|\+\s*["']/.test(t))return true;
+  if(/`/.test(t))return false; // texto con código dentro: lo pinta md()
+  const words=t.split(/\s+/);
+  return words.every(codeToken)&&(words.length<=2||/[^\sA-Za-z]/.test(t));
+}
 function quizQuestion(q,qi){
   const fs=el("fieldset",{class:"quiz-q"});
   const why=el("p",{class:"quiz-why","aria-live":"polite"});
@@ -290,7 +310,7 @@ function quizQuestion(q,qi){
     markStudied();setLast(current,4,qi);paint();refreshChrome();
     const c=fs.closest(".section-card")?.querySelector(".section-card__count");if(c)c.textContent=sectionCount("quiz");
   }},el("span",{class:"quiz-opt__key"},LETTERS[oi]),
-    isCodeOption(o)?el("span",{class:"quiz-opt__text","data-code":"true"},o.replace(/`/g,"")):el("span",{class:"quiz-opt__text",html:md(o)}),
+    isCodeOption(o)?el("span",{class:"quiz-opt__text","data-code":"true"},wholeSpan(o)??o):el("span",{class:"quiz-opt__text",html:md(o)}),
     el("span",{class:"quiz-opt__flag"})));
   function paint(){
     const pick=(answers[current]||{})[qi];const answered=pick!=null;
