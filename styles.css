@@ -527,6 +527,35 @@ a.week-tab:hover{color:var(--ink);background:var(--surface-2)}
 .run-out__body{margin:0;padding:10px 14px;font:var(--fw-regular) var(--fs-code-sm)/1.5 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;background:none;border:0}
 .run-out__err{color:var(--bad)}
 
+/* ── Consola de Ejecutar (§19) */
+.console{border:var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.console__bar{display:flex;align-items:center;gap:var(--space-3);padding:8px 14px;border-bottom:var(--border);background:var(--surface-2);font:var(--fw-medium) var(--fs-label) var(--font-mono);color:var(--ink-2)}
+.console__name{color:var(--ink)}
+.console__status{display:inline-flex;align-items:center;gap:6px}
+.console__status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.console__status[data-state="running"],.console__status[data-state="waiting"]{color:var(--accent)}
+.console__status[data-state="error"]{color:var(--bad)}
+.console__actions{margin-left:auto;display:flex;gap:var(--space-3)}
+.console__link{border:0;background:none;padding:0;font:inherit;color:var(--ink);cursor:pointer}
+.console__link:hover{text-decoration:underline;text-underline-offset:3px}
+.console__link--primary{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.console__out{padding:12px 14px 14px;background:var(--bg);font:var(--fw-regular) var(--fs-code)/var(--lh-code) var(--font-mono);min-height:120px;max-height:320px;overflow-y:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+.console__line{min-height:var(--lh-code)}
+.console__meta{color:var(--console-meta)}
+.console__err{color:var(--bad)}
+.console__in{color:var(--console-input);font-weight:var(--fw-medium)}
+.console__input{min-width:120px;height:26px;padding:0 6px;border:0;border-bottom:2px solid var(--console-input);background:var(--console-input-bg);color:var(--console-input);font:inherit;font-weight:var(--fw-medium);border-radius:0;vertical-align:baseline}
+.console__input:focus-visible{outline:var(--focus-outline);outline-offset:var(--focus-offset)}
+.console__send{margin-left:var(--space-2);font:var(--fw-medium) var(--fs-micro) var(--font-mono);color:var(--ink-2)}
+.console__presets{display:flex;align-items:center;gap:6px;padding:10px 14px;border-top:var(--border);font-size:var(--fs-meta);color:var(--ink-2)}
+.console__presets-label{flex:none}
+.console__chips{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.console__chip{flex:none;font:var(--fw-medium) var(--fs-label) var(--font-mono);padding:4px 9px;border-radius:var(--radius-pill);border:var(--border);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap}
+.console__chip:hover{background:var(--surface-2)}
+.console__chip[data-fail]{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+.console__hint{margin:0;padding:8px 14px;border-top:var(--border);font-size:var(--fs-meta);color:var(--ink-2)}
+.console-box[hidden],.results-box[hidden]{display:none}
+
 /* ── Toast de ejercicio aprobado (§9) */
 .toast{position:fixed;right:32px;bottom:32px;z-index:50;min-width:300px;max-width:calc(100vw - 32px);display:flex;align-items:center;gap:14px;padding:14px 18px;border:1px solid var(--ok);border-radius:var(--radius-lg);background:var(--surface);overflow:hidden;opacity:0;transform:translateY(8px);transition:opacity var(--dur-base) var(--ease),transform var(--dur-base) var(--ease)}
 .toast.is-in{opacity:1;transform:none}
@@ -649,6 +678,12 @@ html[data-mode="focus"] .app-header,html[data-mode="focus"] .week-tabs,html[data
   .ex-actions{position:sticky;bottom:0;z-index:5;display:grid;grid-template-columns:1fr auto;gap:var(--space-2);margin:0 calc(-1 * var(--space-4));padding:var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom,0px));border-top:var(--border);background:var(--surface)}
   .ex-actions__reset:empty{display:none}
   .ex-reset-row{display:flex;justify-content:flex-end}
+  /* Consola en móvil */
+  .console__out{font-size:var(--fs-code-sm);line-height:var(--lh-code-sm)}
+  .console__line{min-height:var(--lh-code-sm)}
+  .console__input{font-size:16px;height:30px}
+  .console__link,.console__chip{min-height:var(--tap-min)}
+  .console__presets{flex-wrap:nowrap}
   /* Antes de empezar en móvil (2e) */
   .home__setup{padding:0 var(--space-4) var(--space-3)}
   .home__top--after-setup{padding-top:0}

@@ -753,6 +753,90 @@ function showToast({title,sub,action}){
   toastState={el:t,close};
 }
 
+// ── Consola de Ejecutar (§19). Corre el programa con input() en línea; "Detener" corta incluso un bucle infinito
+// (Skulpt cede el control cada 100 ms y en ese momento se aborta). No toca runPy/runTest, que siguen siendo el corrector.
+const CONSOLE_MAX_LINES=400;
+async function runInteractive(src,{onOut,onInput,isStopped}){
+  await loadSkulpt();const Sk=window.Sk;const STOP={stopped:true};
+  Sk.configure({__future__:Sk.python3,execLimit:null,yieldLimit:100,output:onOut,
+    read:f=>{const x=Sk.builtinFiles&&Sk.builtinFiles.files[f];if(x===undefined)throw "File not found: '"+f+"'";return x},
+    inputfun:prompt=>onInput(prompt),inputfunTakesPrompt:true});
+  try{await Sk.misceval.asyncToPromise(()=>Sk.importMainWithBody("<stdin>",false,src,true),{"*":()=>{if(isStopped())throw STOP}});return{ok:true}}
+  // Si se pidió detener, cualquier error que llegue (Skulpt envuelve el rechazo de input()) cuenta como "detenido"
+  catch(e){if(e===STOP||e?.stopped||isStopped())return{stopped:true};return{err:String(e),info:errorInfo(e,0)}}
+}
+function createConsole({fileName,getCode,tests,isFailing,onErrorLine}){
+  const status=el("span",{class:"console__status"});
+  const actions=el("span",{class:"console__actions"});
+  const out=el("div",{class:"console__out",role:"log","aria-live":"polite","aria-label":"Salida del programa"});
+  const presets=tests.map((t,i)=>({t,i})).filter(x=>x.t.stdin?.length);
+  const presetRow=presets.length?el("div",{class:"console__presets"},el("span",{class:"console__presets-label"},"Usar entrada de:"),
+    el("div",{class:"console__chips"},presets.map(({t,i})=>{const label=`caso ${i+1} · ${t.stdin.join(", ")}`;
+      return el("button",{class:"console__chip",type:"button","data-case":String(i),title:label,onclick:()=>run(t.stdin)},label.length>24?label.slice(0,23)+"…":label)}))):null;
+  const hint=prefs.consoleHintSeen?null:el("p",{class:"console__hint"},"Lo que escribiste va en azul; lo que imprime tu programa, en tinta.");
+  const box=el("div",{class:"console","aria-label":"Consola"},
+    el("div",{class:"console__bar"},el("span",{class:"console__name"},"Consola"),status,actions),out,presetRow,hint);
+  let session=0,stopped=false,pendingInput=null,line=null,buf="",raf=0,t0=0;
+  const setStatus=(state,text)=>{status.dataset.state=state;status.textContent=text};
+  const link=(label,fn,primary)=>el("button",{class:"console__link"+(primary?" console__link--primary":""),type:"button",onclick:fn},label);
+  const newLine=cls=>{line=el("div",{class:"console__line"+(cls?" "+cls:"")});out.append(line);while(out.childElementCount>CONSOLE_MAX_LINES)out.firstElementChild.remove();return line};
+  const meta=t=>{newLine("console__meta").textContent=t;line=null};
+  // La salida se acumula y se pinta una vez por frame (un print en bucle puede generar megas por segundo)
+  function flush(){
+    raf=0;if(!buf)return;let text=buf;buf="";
+    if(text.length>20000)text=text.slice(-20000);
+    const parts=text.split("\n");
+    // Cada "\n" cierra la línea abierta; si no había ninguna, era una línea vacía (print()) y se crea
+    parts.forEach((part,k)=>{if(k>0){if(!line)newLine();line=null}if(part){if(!line)newLine();line.append(document.createTextNode(part))}});
+    out.scrollTop=out.scrollHeight;
+  }
+  const write=t=>{buf+=t;if(!raf)raf=requestAnimationFrame(flush)};
+  function paintCases(){presetRow?.querySelectorAll(".console__chip").forEach(c=>c.toggleAttribute("data-fail",!!isFailing(+c.dataset.case)))}
+  function stop(){
+    if(!pendingInput&&status.dataset.state!=="running"&&status.dataset.state!=="waiting")return;
+    stopped=true;
+    if(pendingInput){const{reject,inp,tip}=pendingInput;pendingInput=null;inp.remove();tip.remove();line=null;reject({stopped:true})}
+  }
+  async function run(auto){
+    stop();const me=++session;stopped=false;buf="";out.textContent="";line=null;paintCases();
+    const queue=auto?[...auto]:null;
+    meta(`$ python ${fileName}`);
+    setStatus("running","ejecutando");actions.replaceChildren(link("Detener",stop));
+    t0=performance.now();
+    const res=await runInteractive(getCode(),{
+      onOut:write,isStopped:()=>stopped||me!==session,
+      onInput:prompt=>{
+        flush();if(prompt)write(prompt);flush();if(!line)newLine();
+        // Entrada automática (preset): se escribe en azul sin pausa
+        if(queue){const v=queue.length?String(queue.shift()):"";line.append(el("span",{class:"console__in"},v));line=null;return Promise.resolve(v)}
+        return new Promise((resolve,reject)=>{
+          setStatus("waiting","esperando entrada");
+          const inp=el("input",{class:"console__input",type:"text","aria-label":"Entrada para input()",autocomplete:"off",autocapitalize:"off",spellcheck:"false",inputmode:"text",enterkeyhint:"send"});
+          const tip=el("span",{class:"console__send","aria-hidden":"true"},"↵ enviar");
+          line.append(inp,tip);pendingInput={reject,inp,tip};
+          inp.addEventListener("keydown",e=>{
+            if(e.key==="Enter"){e.preventDefault();const v=inp.value;inp.replaceWith(el("span",{class:"console__in"},v));tip.remove();line=null;pendingInput=null;setStatus("running","ejecutando");resolve(v)}
+            else if(e.key==="Escape"){e.preventDefault();inp.blur()}
+          });
+          out.scrollTop=out.scrollHeight;inp.focus({preventScroll:true});box.scrollIntoView({block:"nearest"});
+        });
+      }});
+    if(me!==session)return; // otra ejecución la reemplazó
+    flush();
+    const secs=((performance.now()-t0)/1000).toLocaleString("es",{maximumFractionDigits:2,minimumFractionDigits:2});
+    const again=[link("Ejecutar de nuevo",()=>run(),true),link("Limpiar",()=>{out.textContent="";line=null})];
+    if(res.stopped){meta("— detenido —");setStatus("done","detenido");actions.replaceChildren(...again)}
+    else if(res.err){
+      const inf=res.info;newLine("console__err").textContent=inf?`${inf.type}: ${inf.msg}${inf.line?` (línea ${inf.line})`:""}`:res.err;line=null;
+      meta("— fin (error) —");setStatus("error",inf?.line?`error · línea ${inf.line}`:"error");actions.replaceChildren(...again);
+      if(inf?.line)onErrorLine(inf.line-1,inf.token);
+    }else{meta("— fin (código 0) —");setStatus("done",`terminó · ${secs} s`);actions.replaceChildren(...again)}
+    out.scrollTop=out.scrollHeight;
+    if(hint&&!prefs.consoleHintSeen){prefs.consoleHintSeen=true;savePrefs()}
+  }
+  return{el:box,run,stop,isBusy:()=>status.dataset.state==="running"||status.dataset.state==="waiting"};
+}
+
 // Panel de un ejercicio: enunciado, editor, acciones y resultados.
 // hooks: onPass() tras aprobar, next {label, go} para "Siguiente" / "Ir →"
 function practicePanel(p,j,hooks={}){
@@ -760,7 +844,10 @@ function practicePanel(p,j,hooks={}){
   const ed=createEditor({value:codes[key]??p.starter,starter:p.starter,fileName:(snake(p.name)||"ejercicio")+".py",label:"Código Python: "+p.name,
     onChange:v=>{codes[key]=v;store.set("cs50p-code",codes)},onSubmit:()=>check.click()});
   const res=el("div",{class:"results-box","aria-live":"polite"});
-  const stdin=el("input",{class:"stdin",id:"in-"+key,placeholder:"Entradas para Ejecutar, separadas por | (ej: 100|300)","aria-label":"Entradas para Ejecutar, separadas por |",autocomplete:"off"});
+  // La consola sustituye a los resultados mientras está abierta; "Comprobar" vuelve a los resultados
+  let lastResults=null,cons=null;
+  const consoleBox=el("div",{class:"console-box",hidden:""});
+  const showResults=()=>{cons?.stop();consoleBox.hidden=true;res.hidden=false};
   const check=el("button",{class:"btn--primary",type:"button"},"Comprobar",el("kbd",{class:"hide-mobile","aria-label":"atajo Comando Enter"},"⌘↵"));
   const run=el("button",{class:"btn--secondary",type:"button"},"Ejecutar");
   // "Volver al inicio" pide confirmación inline
@@ -785,8 +872,9 @@ function practicePanel(p,j,hooks={}){
     finally{label(b).textContent=t;check.disabled=run.disabled=false}
   }
   check.onclick=()=>busy(check,async()=>{
+    showResults();
     const code=ed.value;codes[key]=code;store.set("cs50p-code",codes);
-    const results=[];for(const t of p.tests)results.push(await runTest(code,t));
+    const results=[];for(const t of p.tests)results.push(await runTest(code,t));lastResults=results;
     const all=results.every(r=>r.pass),was=!!passed[key];
     const errAt=renderResults(res,{p,results,code,next:hooks.next});
     if(errAt)ed.markError(errAt.line-1,errAt.token);else ed.clearError();
@@ -798,20 +886,17 @@ function practicePanel(p,j,hooks={}){
       }
     }
   });
-  run.onclick=()=>busy(run,async()=>{
-    const code=ed.value;codes[key]=code;store.set("cs50p-code",codes);
-    const ins=stdin.value?stdin.value.split("|"):[];
-    const r=await runPy(code,ins,0);
-    res.replaceChildren(el("div",{class:"run-out"},el("p",{class:"run-out__title"},"Salida"),
-      el("pre",{class:"run-out__body"},r.out||(r.err?"":"(sin salida)"),r.err?el("span",{class:"run-out__err"},(r.out&&!r.out.endsWith("\n")?"\n":"")+(r.info?`${r.info.type}: ${r.info.msg}${r.info.line?` (línea ${r.info.line})`:""}`:r.err)):null)));
-    if(r.info?.line)ed.markError(r.info.line-1,r.info.token);
-  });
+  run.onclick=()=>{
+    const code=ed.value;codes[key]=code;store.set("cs50p-code",codes);ed.clearError();
+    if(!cons){cons=createConsole({fileName:(snake(p.name)||"ejercicio")+".py",getCode:()=>ed.value,tests:p.tests,isFailing:i=>lastResults&&!lastResults[i]?.pass,onErrorLine:(l,t)=>ed.markError(l,t)});consoleBox.append(cons.el)}
+    res.hidden=true;consoleBox.hidden=false;cons.run();
+  };
   return[
     el("p",{class:"ex-prompt",html:md(p.prompt)}),
-    ed.el,stdin,resetMobile,
+    ed.el,resetMobile,
     el("div",{class:"ex-actions"},check,run,resetDesk),
     el("p",{class:"practice__note",html:"Este Python del navegador es simplificado (sin archivos, <code>csv</code>, <code>json</code> ni <code>match</code>); los problem sets van en cs50.dev."}),
-    res];
+    res,consoleBox];
 }
 
 function observeSections(){
