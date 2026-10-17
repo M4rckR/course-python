@@ -1,1 +1,307 @@
-{"week": 2, "title": "Bucles, listas y diccionarios", "time": "lectura 25 min · práctica 3 h", "topics": ["while", "for · range", "break · continue", "list · len", "dict", "Lista de dicts", "Funciones y bucles anidados"], "notesUrl": "https://cs50.harvard.edu/python/notes/2/", "videoUrl": "https://cs50.harvard.edu/python/weeks/2/", "summary": ["Un **bucle** repite código. `while cond:` repite mientras la condición sea verdadera: acuérdate de actualizar el contador (`i += 1`) o será infinito (Ctrl+C lo corta).", "`for i in range(3):` repite 3 veces con i = 0, 1, 2. Si no usas la variable, la convención es `_`.", "`while True:` + `break` (o `return` dentro de una función) es el patrón para pedir datos hasta que sean válidos; `continue` salta a la siguiente vuelta.", "Una **lista** es `[\"Hermione\", \"Harry\"]`: se accede con `lista[0]`, se recorre con `for x in lista:` y su tamaño es `len(lista)`.", "Un **diccionario** guarda pares llave-valor: `d[\"Harry\"]`. `for k in d:` recorre las llaves y `d[k]` da el valor.", "Puedes tener una **lista de dicts** para guardar varios campos por elemento, y `None` para \"sin valor\".", "Multiplicar texto lo repite: `\"meow\" * 3`. `print(..., end=\"\")` no salta de línea y `sep=\", \"` cambia el separador.", "Bucles anidados: uno dentro de otro (filas y columnas), y conviene partirlos en funciones como `print_row` y `print_square`."], "jsToPy": [{"js": "for (let i=0;i<n;i++)", "py": "for i in range(n):", "note": "`range(3)` da 0, 1, 2"}, {"js": "for (const x of arr)", "py": "for x in lista:", "note": "Sin índices"}, {"js": "while (i < 3) { i++; }", "py": "while i < 3:\n    i += 1", "note": "No existe `i++`"}, {"js": "while (true) { ... break; }", "py": "while True:\n    ...\n    break", "note": "`True` con mayúscula"}, {"js": "arr.length", "py": "len(lista)", "note": "Función, no propiedad"}, {"js": "{a: 1}", "py": "{\"a\": 1}", "note": "Las llaves van entre comillas"}, {"js": "for (const k in obj)", "py": "for k in d:", "note": "Recorre llaves; el valor es `d[k]`"}, {"js": "\"#\".repeat(3)", "py": "\"#\" * 3", "note": "Multiplicar texto lo repite"}, {"js": "null", "py": "None", "note": ""}], "examples": [{"label": "`while True` hasta tener un valor válido (del notes):", "code": "def main():\n    meow(get_number())\n\n\ndef get_number():\n    while True:\n        n = int(input(\"What's n? \"))\n        if n > 0:\n            return n\n\n\ndef meow(n):\n    for _ in range(n):\n        print(\"meow\")\n\n\nmain()"}, {"label": "Diccionario: recorrer llaves y valores:", "code": "students = {\n    \"Hermione\": \"Gryffindor\",\n    \"Harry\": \"Gryffindor\",\n    \"Ron\": \"Gryffindor\",\n    \"Draco\": \"Slytherin\",\n}\nfor student in students:\n    print(student, students[student], sep=\", \")"}, {"label": "Lista de dicts:", "code": "students = [\n    {\"name\": \"Hermione\", \"house\": \"Gryffindor\", \"patronus\": \"Otter\"},\n    {\"name\": \"Draco\", \"house\": \"Slytherin\", \"patronus\": None},\n]\nfor student in students:\n    print(student[\"name\"], student[\"house\"], student[\"patronus\"], sep=\", \")"}, {"label": "Cuadrado de `#` con funciones (Mario):", "code": "def main():\n    print_square(3)\n\n\ndef print_square(size):\n    for i in range(size):\n        print_row(size)\n\n\ndef print_row(width):\n    print(\"#\" * width)\n\n\nmain()"}], "traps": ["`while` sin actualizar la variable (`i = i - 1` o `i += 1`) es un bucle infinito. Corta con Ctrl+C.", "`range(3)` empieza en 0 y no incluye el 3. Para contar de 1, usa `range(1, n + 1)` o suma 1 al índice.", "`d[\"x\"]` falla si la llave no existe, y las llaves distinguen mayúsculas. Revisa que escribas la llave igual.", "`print(\"#\")` dentro del bucle imprime en cada vuelta y salta de línea; para una fila usa `end=\"\"` y un `print()` vacío al final.", "Con `int(input())` dentro de un `while True`, si escriben texto el programa se cae (lo arreglas en la semana 3)."], "quiz": [{"q": "¿Qué valores da `range(3)`?", "options": ["1, 2, 3", "0, 1, 2", "0, 1, 2, 3", "3"], "answer": 1, "why": "Empieza en 0 y no incluye el 3."}, {"q": "¿Qué hace `break` dentro de un `while True`?", "options": ["Salta a la siguiente vuelta", "Sale del bucle", "Reinicia el bucle", "Detiene el programa con error"], "answer": 1, "why": "`break` termina el bucle; `continue` es el que salta a la siguiente vuelta."}, {"q": "Con `students = {\"Harry\": \"Gryffindor\"}`, ¿qué recorre `for s in students:`?", "options": ["Los valores", "Las llaves", "Pares llave-valor", "Los índices"], "answer": 1, "why": "Iterar un dict da las llaves; el valor lo sacas con `students[s]`."}, {"q": "¿Qué imprime `print(\"ab\" * 2)`?", "options": ["ab2", "abab", "Error", "ab ab"], "answer": 1, "why": "Multiplicar un str lo repite."}, {"q": "¿Qué hace `print(\"#\", end=\"\")`?", "options": ["No imprime nada", "Imprime sin saltar de línea", "Imprime dos veces", "Da error"], "answer": 1, "why": "`end=\"\"` reemplaza el salto de línea final por nada."}], "submit": "Prueba con `check50` y envía con `submit50` (el comando exacto está en cada enunciado). Plazo del ciclo: **31 dic 2026**.", "pset": [{"name": "camelCase", "url": "https://cs50.harvard.edu/python/psets/2/camel/", "task": "Pide un nombre en camelCase e imprímelo en snake_case (`firstName` -> `first_name`). Archivo `camel.py`.", "hints": ["Los strings se pueden recorrer letra por letra con un `for`.", "Revisa los métodos de str para mayúsculas/minúsculas y arma el resultado poco a poco."]}, {"name": "Coke Machine", "url": "https://cs50.harvard.edu/python/psets/2/coke/", "task": "Una Coca cuesta 50 centavos: pide `Insert Coin: ` (solo vale 25, 10 y 5), imprime `Amount Due: N` y al llegar a 50 o más `Change Owed: N`. Archivo `coke.py`.", "hints": ["`while` mientras falte pagar; ignora monedas inválidas pero vuelve a mostrar `Amount Due`.", "El texto debe ser exactamente el del enunciado o check50 falla."]}, {"name": "Just setting up my twttr", "url": "https://cs50.harvard.edu/python/psets/2/twttr/", "task": "Pide un texto e imprímelo sin vocales A, E, I, O, U (mayúsculas o minúsculas). Archivo `twttr.py`.", "hints": ["Recorre el texto con un `for` y construye la salida.", "Compara en minúscula contra `\"aeiou\"`; lo demás (números, espacios, signos) se queda."]}, {"name": "Vanity Plates", "url": "https://cs50.harvard.edu/python/psets/2/plates/", "task": "Pide `Plate: ` e imprime `Valid` o `Invalid` según las reglas (2-6 caracteres alfanuméricos, empieza con 2 letras, números solo al final, el primer número no es 0). Archivo `plates.py`.", "hints": ["Define `main()` e `is_valid(s)` (devuelve True/False) y llama `main()` al final.", "Haz una revisión por regla y combínalas; puedes crear funciones auxiliares."]}, {"name": "Nutrition Facts", "url": "https://cs50.harvard.edu/python/psets/2/nutrition/", "task": "Pide una fruta e imprime `Calories: N` según la tabla de la FDA; si no es fruta, no imprimas nada. Archivo `nutrition.py`.", "hints": ["Guarda frutas y calorías en un dict en vez de 20 `if`.", "Ignora mayúsculas y revisa con `if k in d:`."]}], "practice": [{"name": "Total por categoría", "prompt": "Escribe `total_by_category(gastos)` que reciba una lista de tuplas `(categoria, monto)` y devuelva un dict con el total de cada categoría.", "starter": "def total_by_category(gastos):\n    totales = {}\n    ...\n    return totales\n", "tests": [{"code": "print(total_by_category([(\"comida\", 10), (\"taxi\", 5), (\"comida\", 2.5)]))", "expect": "{'comida': 12.5, 'taxi': 5}"}, {"code": "print(total_by_category([]))", "expect": "{}"}]}, {"name": "Escalera", "prompt": "Pide una altura con `input(\"Altura: \")` e imprime una escalera de `#`: en la fila 1 un `#`, en la fila 2 dos, etc.", "starter": "def main():\n    ...\n\n\nmain()\n", "tests": [{"stdin": ["3"], "expect": "#\n##\n###"}, {"stdin": ["1"], "expect": "#"}]}, {"name": "Cuenta vocales", "prompt": "Escribe `count_vowels(texto)` que devuelva cuántas vocales tiene, sin importar mayúsculas.", "starter": "def count_vowels(texto):\n    ...\n", "tests": [{"code": "print(count_vowels(\"Hola Mundo\"))", "expect": "4"}, {"code": "print(count_vowels(\"AEIOU xyz\"))", "expect": "5"}]}], "project": {"goal": "Tu tracker ya acepta **varios gastos**.", "steps": ["Pide gastos en un `while True` hasta que el usuario escriba `fin`.", "Guárdalos en una lista de dicts: `{\"comercio\": ..., \"monto\": ..., \"categoria\": ...}`.", "Al terminar imprime el total por categoría con tu función de práctica."]}, "sources": ["https://cs50.harvard.edu/python/notes/2/", "https://cs50.harvard.edu/python/psets/2/camel/", "https://cs50.harvard.edu/python/psets/2/coke/", "https://cs50.harvard.edu/python/psets/2/twttr/", "https://cs50.harvard.edu/python/psets/2/plates/", "https://cs50.harvard.edu/python/psets/2/nutrition/"]}
+{
+ "week": 2,
+ "title": "Bucles, listas y diccionarios",
+ "time": "lectura 25 min · práctica 3 h",
+ "topics": [
+  "while",
+  "for · range",
+  "break · continue",
+  "list · len",
+  "dict",
+  "Lista de dicts",
+  "Funciones y bucles anidados"
+ ],
+ "notesUrl": "https://cs50.harvard.edu/python/notes/2/",
+ "videoUrl": "https://cs50.harvard.edu/python/weeks/2/",
+ "summary": [
+  "Copiar y pegar `print(\"meow\")` tres veces funciona, pero es mal diseño: un **bucle** repite código sin duplicarlo.",
+  "`while`: la condición se revisa antes de cada vuelta. Necesitas un contador que cambie (`i = i - 1`); si no, es un **bucle infinito** y lo cortas con Ctrl+C.",
+  "Convención: contar **desde 0** hasta `< n`. `i += 1` es la forma corta de `i = i + 1` (en Python no hay `i++`).",
+  "`for` recorre una **lista**: `for i in [0, 1, 2]` no escala, así que usas `range(3)`. Si no usas la variable, se llama `_`.",
+  "Multiplicar texto lo repite: `\"meow\\n\" * 3`. Con `end=\"\"` evitas la línea en blanco extra.",
+  "`while True` + `continue`/`break` sirve para pedir datos hasta que sean válidos. Luego David lo mete en funciones: `get_number()` hace `return n` (que también sale del bucle) y `meow(n)` imprime.",
+  "Listas en `hogwarts.py`: índices desde 0 (`students[0]`), `for student in students:` y `range(len(students))` con `i + 1` para que las personas cuenten desde 1.",
+  "**Diccionarios**: asocian llaves con valores (`students[\"Hermione\"]`). `for student in students` recorre las llaves. Después pasa a una **lista de dicts** con `None` cuando no hay valor (el patronus de Draco).",
+  "`mario.py`: `print_column`, `print_row` y `print_square` con **bucles anidados**, que al final se abstraen llamando a `print_row` dentro de `print_square`."
+ ],
+ "jsToPy": [
+  {
+   "js": "for (let i=0;i<n;i++)",
+   "py": "for i in range(n):",
+   "note": "`range(3)` da 0, 1, 2"
+  },
+  {
+   "js": "for (const x of arr)",
+   "py": "for x in lista:",
+   "note": "Sin índices"
+  },
+  {
+   "js": "while (i < 3) { i++; }",
+   "py": "while i < 3:\n    i += 1",
+   "note": "No existe `i++`"
+  },
+  {
+   "js": "while (true) { ... break; }",
+   "py": "while True:\n    ...\n    break",
+   "note": "`True` con mayúscula; también `continue`"
+  },
+  {
+   "js": "arr[0]",
+   "py": "lista[0]",
+   "note": "También desde 0"
+  },
+  {
+   "js": "arr.length",
+   "py": "len(lista)",
+   "note": "Función, no propiedad"
+  },
+  {
+   "js": "{a: 1}",
+   "py": "{\"a\": 1}",
+   "note": "Las llaves van entre comillas"
+  },
+  {
+   "js": "for (const k in obj)",
+   "py": "for k in d:",
+   "note": "Recorre llaves; el valor es `d[k]`"
+  },
+  {
+   "js": "\"#\".repeat(3)",
+   "py": "\"#\" * 3",
+   "note": "Multiplicar texto lo repite"
+  },
+  {
+   "js": "null",
+   "py": "None",
+   "note": ""
+  }
+ ],
+ "examples": [
+  {
+   "label": "cat.py — versión final con funciones:",
+   "code": "def main():\n    meow(get_number())\n\n\ndef get_number():\n    while True:\n        n = int(input(\"What's n? \"))\n        if n > 0:\n            return n\n\n\ndef meow(n):\n    for _ in range(n):\n        print(\"meow\")\n\n\nmain()"
+  },
+  {
+   "label": "hogwarts.py — índices con `range(len())`:",
+   "code": "students = [\"Hermione\", \"Harry\", \"Ron\"]\n\nfor i in range(len(students)):\n    print(i + 1, students[i])"
+  },
+  {
+   "label": "hogwarts.py — lista de dicts con `None`:",
+   "code": "students = [\n    {\"name\": \"Hermione\", \"house\": \"Gryffindor\", \"patronus\": \"Otter\"},\n    {\"name\": \"Harry\", \"house\": \"Gryffindor\", \"patronus\": \"Stag\"},\n    {\"name\": \"Ron\", \"house\": \"Gryffindor\", \"patronus\": \"Jack Russell terrier\"},\n    {\"name\": \"Draco\", \"house\": \"Slytherin\", \"patronus\": None},\n]\n\nfor student in students:\n    print(student[\"name\"], student[\"house\"], student[\"patronus\"], sep=\", \")"
+  },
+  {
+   "label": "mario.py — versión final con abstracción:",
+   "code": "def main():\n    print_square(3)\n\n\ndef print_square(size):\n    for i in range(size):\n        print_row(size)\n\n\ndef print_row(width):\n    print(\"#\" * width)\n\n\nmain()"
+  }
+ ],
+ "traps": [
+  "`while i != 0:` sin `i = i - 1` es un **bucle infinito** (David lo hace en vivo y lo corta con Ctrl+C). Sumar cuando deberías restar también lo hace infinito.",
+  "Off-by-one: si cambias `i = 1` por `i = 0` y dejas `<=`, da una vuelta de más. Al empezar en 0, usa `<`.",
+  "`range(students)` falla porque `range` espera un entero: usa `range(len(students))`.",
+  "`print(\"meow\\n\" * 3)` deja una línea en blanco extra por el salto de línea de `print`: agrega `end=\"\"`.",
+  "Mostrar `i` tal cual pone a Hermione en el puesto 0: para personas, imprime `i + 1`."
+ ],
+ "quiz": [
+  {
+   "q": "¿Qué pasa con `i = 3` y `while i != 0: print(\"meow\")` sin nada más?",
+   "options": [
+    "Imprime 3 veces",
+    "Error de sintaxis",
+    "No imprime nada",
+    "Bucle infinito"
+   ],
+   "answer": 3,
+   "why": "`i` nunca cambia, así que la condición siempre es verdadera. Ctrl+C lo corta."
+  },
+  {
+   "q": "¿Qué valores da `range(3)`?",
+   "options": [
+    "1, 2, 3",
+    "0, 1, 2",
+    "0, 1, 2, 3",
+    "3"
+   ],
+   "answer": 1,
+   "why": "Empieza en 0 y no incluye el 3: la convención de contar desde 0."
+  },
+  {
+   "q": "En `get_number()`, ¿por qué David puede usar `return n` dentro del `while True` sin `break`?",
+   "options": [
+    "`return` sale de la función y, por tanto, del bucle",
+    "No puede, es un bug",
+    "`return` solo sale del if",
+    "Porque `while True` termina solo"
+   ],
+   "answer": 0,
+   "why": "`break` sale del bucle; `return` devuelve el valor y termina la función entera."
+  },
+  {
+   "q": "Con `students = {\"Harry\": \"Gryffindor\"}`, ¿qué recorre `for s in students:`?",
+   "options": [
+    "Los valores",
+    "Pares llave-valor",
+    "Las llaves",
+    "Los índices"
+   ],
+   "answer": 2,
+   "why": "Iterar un dict da las llaves; el valor lo sacas con `students[s]`."
+  },
+  {
+   "q": "¿Por qué `print(\"meow\\n\" * 3, end=\"\")` lleva `end=\"\"`?",
+   "options": [
+    "Para no imprimir nada",
+    "Para separar con comas",
+    "Es obligatorio",
+    "Para evitar la línea en blanco extra"
+   ],
+   "answer": 3,
+   "why": "El último `\\n` ya salta de línea; sin `end=\"\"`, `print` agrega otro."
+  }
+ ],
+ "submit": "Prueba con `check50` y envía con `submit50` (el comando exacto está en cada enunciado). Plazo del ciclo: **31 dic 2026**.",
+ "pset": [
+  {
+   "name": "camelCase",
+   "url": "https://cs50.harvard.edu/python/psets/2/camel/",
+   "task": "Pide un nombre en camelCase e imprímelo en snake_case (`firstName` -> `first_name`). Archivo `camel.py`.",
+   "hints": [
+    "Los strings se pueden recorrer letra por letra con un `for`.",
+    "Revisa los métodos de str para mayúsculas/minúsculas y arma el resultado poco a poco."
+   ]
+  },
+  {
+   "name": "Coke Machine",
+   "url": "https://cs50.harvard.edu/python/psets/2/coke/",
+   "task": "Una Coca cuesta 50 centavos: pide `Insert Coin: ` (solo vale 25, 10 y 5), imprime `Amount Due: N` y al llegar a 50 o más `Change Owed: N`. Archivo `coke.py`.",
+   "hints": [
+    "`while` mientras falte pagar; ignora monedas inválidas pero vuelve a mostrar `Amount Due`.",
+    "El texto debe ser exactamente el del enunciado o check50 falla."
+   ]
+  },
+  {
+   "name": "Just setting up my twttr",
+   "url": "https://cs50.harvard.edu/python/psets/2/twttr/",
+   "task": "Pide un texto e imprímelo sin vocales A, E, I, O, U (mayúsculas o minúsculas). Archivo `twttr.py`.",
+   "hints": [
+    "Recorre el texto con un `for` y construye la salida.",
+    "Compara en minúscula contra `\"aeiou\"`; lo demás (números, espacios, signos) se queda."
+   ]
+  },
+  {
+   "name": "Vanity Plates",
+   "url": "https://cs50.harvard.edu/python/psets/2/plates/",
+   "task": "Pide `Plate: ` e imprime `Valid` o `Invalid` según las reglas (2-6 caracteres alfanuméricos, empieza con 2 letras, números solo al final, el primer número no es 0). Archivo `plates.py`.",
+   "hints": [
+    "Define `main()` e `is_valid(s)` (devuelve True/False) y llama `main()` al final.",
+    "Haz una revisión por regla y combínalas; puedes crear funciones auxiliares."
+   ]
+  },
+  {
+   "name": "Nutrition Facts",
+   "url": "https://cs50.harvard.edu/python/psets/2/nutrition/",
+   "task": "Pide una fruta e imprime `Calories: N` según la tabla de la FDA; si no es fruta, no imprimas nada. Archivo `nutrition.py`.",
+   "hints": [
+    "Guarda frutas y calorías en un dict en vez de 20 `if`.",
+    "Ignora mayúsculas y revisa con `if k in d:`."
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "name": "Total por categoría",
+   "prompt": "Escribe `total_by_category(gastos)` que reciba una lista de tuplas `(categoria, monto)` y devuelva un dict con el total de cada categoría.",
+   "starter": "def total_by_category(gastos):\n    totales = {}\n    ...\n    return totales\n",
+   "tests": [
+    {
+     "code": "print(total_by_category([(\"comida\", 10), (\"taxi\", 5), (\"comida\", 2.5)]))",
+     "expect": "{'comida': 12.5, 'taxi': 5}"
+    },
+    {
+     "code": "print(total_by_category([]))",
+     "expect": "{}"
+    }
+   ]
+  },
+  {
+   "name": "Escalera",
+   "prompt": "Pide una altura con `input(\"Altura: \")` e imprime una escalera de `#`: en la fila 1 un `#`, en la fila 2 dos, etc.",
+   "starter": "def main():\n    ...\n\n\nmain()\n",
+   "tests": [
+    {
+     "stdin": [
+      "3"
+     ],
+     "expect": "#\n##\n###"
+    },
+    {
+     "stdin": [
+      "1"
+     ],
+     "expect": "#"
+    }
+   ]
+  },
+  {
+   "name": "Cuenta vocales",
+   "prompt": "Escribe `count_vowels(texto)` que devuelva cuántas vocales tiene, sin importar mayúsculas.",
+   "starter": "def count_vowels(texto):\n    ...\n",
+   "tests": [
+    {
+     "code": "print(count_vowels(\"Hola Mundo\"))",
+     "expect": "4"
+    },
+    {
+     "code": "print(count_vowels(\"AEIOU xyz\"))",
+     "expect": "5"
+    }
+   ]
+  }
+ ],
+ "project": {
+  "goal": "Tu tracker ya acepta **varios gastos**.",
+  "steps": [
+   "Pide gastos en un `while True` hasta que el usuario escriba `fin`.",
+   "Guárdalos en una lista de dicts: `{\"comercio\": ..., \"monto\": ..., \"categoria\": ...}`.",
+   "Al terminar imprime el total por categoría con tu función de práctica."
+  ]
+ },
+ "sources": [
+  "https://cs50.harvard.edu/python/notes/2/",
+  "https://cs50.harvard.edu/python/psets/2/camel/",
+  "https://cs50.harvard.edu/python/psets/2/coke/",
+  "https://cs50.harvard.edu/python/psets/2/twttr/",
+  "https://cs50.harvard.edu/python/psets/2/plates/",
+  "https://cs50.harvard.edu/python/psets/2/nutrition/",
+  "https://cdn.cs50.net/python/2022/x/lectures/2/lang/en/lecture2.txt",
+  "https://cdn.cs50.net/python/2022/x/lectures/2/lang/en/lecture2.srt"
+ ],
+ "tips": [
+  "Evita copiar y pegar: el código repetido cuesta mantener. Piensa en el caso extremo: ¿y si fueran un millón de meows?",
+  "Usa `_` solo para variables que no usas; a las demás dales nombres descriptivos (`student`, no `i`, cuando recorres la lista).",
+  "Parte el problema en funciones con un solo trabajo (`print_square` usa `print_row`): eso es **abstracción**.",
+  "Escribe pensando en quien lee después: tú en el futuro, tu profe o tus colegas."
+ ],
+ "shorts": [
+  {
+   "title": "While Loops",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "For Loops",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "Lists",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "Dictionaries",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  }
+ ],
+ "transcriptUrl": "https://cdn.cs50.net/python/2022/x/lectures/2/lang/en/lecture2.txt"
+}

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitácora CS50P — 2g Extras · consola, fin de semana, Copiar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>*{box-sizing:border-box}body{margin:0;padding:40px;background:#D9D5CC;color:#1D1C1A;font-family:'Atkinson Hyperlegible',sans-serif}a{color:#2346C8}a:hover{color:#16308F}</style>
+</head>
+<body>
+<div id="2g" style="--bg:#F5F3EE;--surface:#FFFFFF;--surface-2:#EEEBE4;--line:#DDD8CE;--ink:#1D1C1A;--ink-2:#58544D;--ink-3:#8A857C;--accent:#2346C8;--accent-soft:#E4E9FB;--ok:#1E7A4C;--ok-soft:#DEF1E5;--bad:#B5351E;--bad-soft:#FAE2DB;--kw:#9A2F72;--fn:#2346C8;--str:#1E7A4C;--num:#A9520C;--com:#8A857C;width:1280px;background:var(--bg);color:var(--ink);border-radius:8px;padding:40px;display:flex;flex-direction:column;gap:44px;margin-bottom:72px;font-family:'Atkinson Hyperlegible',sans-serif">
+  <div style="display:flex;gap:8px;align-items:center;font:500 13px 'JetBrains Mono',monospace"><span style="background:#1D1C1A;color:#F5F3EE;padding:3px 7px;border-radius:4px">2g</span>Consola de Ejecutar · fin de semana · Copiar</div>
+
+  <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:start">
+    <div><div style="font:700 18px 'Bricolage Grotesque',sans-serif">Ejecutar → consola</div><div style="font-size:14px;color:var(--ink-2);margin-top:4px;line-height:1.45">Cada <code style="font-family:'JetBrains Mono',monospace">input()</code> pide su valor en línea, como en una terminal. Adiós al campo con "|".</div></div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);font:500 13px 'JetBrains Mono',monospace;color:var(--ink-2)"><span style="color:var(--ink)">Consola</span><span style="display:flex;align-items:center;gap:6px;color:var(--accent)"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent)"></span>esperando entrada</span><span style="margin-left:auto">Detener</span></div>
+          <div style="padding:12px 14px 14px;background:var(--bg);font:400 15px/24px 'JetBrains Mono',monospace;min-height:120px">
+            <div style="color:var(--ink-3)">$ python mayor.py</div>
+            <div style="display:flex;align-items:center;gap:0">Edad: <span style="display:inline-flex;align-items:center;min-width:120px;height:26px;margin-left:4px;padding:0 6px;border-bottom:2px solid var(--accent);background:var(--accent-soft);color:var(--accent)">18<span style="display:inline-block;width:2px;height:16px;background:var(--accent);margin-left:2px"></span></span><span style="margin-left:10px;font:500 12px 'JetBrains Mono',monospace;color:var(--ink-2)">↵ enviar</span></div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-size:14px"><span style="color:var(--ink-2);margin-right:4px">Usar entrada de:</span><span style="font:500 13px 'JetBrains Mono',monospace;padding:4px 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface)">caso 1 · 25</span><span style="font:500 13px 'JetBrains Mono',monospace;padding:4px 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface)">caso 2 · 9</span><span style="font:500 13px 'JetBrains Mono',monospace;padding:4px 9px;border:1px solid var(--bad);border-radius:999px;background:var(--bad-soft);color:var(--bad)">caso 3 · 18</span></div>
+        </div>
+        <span style="font-size:13px;color:var(--ink-2)">esperando input() · el texto del prompt es el del propio código</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);font:500 13px 'JetBrains Mono',monospace;color:var(--ink-2)"><span style="color:var(--ink)">Consola</span><span>terminó · 0,03 s</span><span style="margin-left:auto;color:var(--accent);text-decoration:underline">Ejecutar de nuevo</span><span>Limpiar</span></div>
+          <div style="padding:12px 14px 14px;background:var(--bg);font:400 15px/24px 'JetBrains Mono',monospace;min-height:120px">
+            <div style="color:var(--ink-3)">$ python mayor.py</div>
+            <div>Edad: <span style="color:var(--accent);font-weight:500">18</span></div>
+            <div>menor</div>
+            <div style="color:var(--ink-3)">— fin (código 0) —</div>
+          </div>
+          <div style="padding:10px 14px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-2)">Lo que escribiste va en <span style="color:var(--accent);font-weight:700">azul</span>; lo que imprime tu programa, en tinta.</div>
+        </div>
+        <span style="font-size:13px;color:var(--ink-2)">terminado · los errores salen aquí en --bad y marcan la línea como en <a href="./1g-componentes.html">1g</a></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:start">
+    <div><div style="font:700 18px 'Bricolage Grotesque',sans-serif">Final de la semana</div><div style="font-size:14px;color:var(--ink-2);margin-top:4px;line-height:1.45">Bloque tras 08 Proyecto + pie anterior/siguiente siempre visible.</div></div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="border:1px dashed var(--line);border-radius:10px;padding:20px 22px">
+          <div style="font:700 20px 'Bricolage Grotesque',sans-serif">Te faltan 2 secciones</div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><a href="#" style="font:500 14px 'JetBrains Mono',monospace;padding:6px 10px;border:1px solid var(--accent);border-radius:6px;color:var(--accent);text-decoration:none">06 Practica · 1/3</a><a href="#" style="font:500 14px 'JetBrains Mono',monospace;padding:6px 10px;border:1px solid var(--line);border-radius:6px;color:var(--ink);text-decoration:none">07 Problem set · 1/5</a></div>
+          <div style="margin-top:14px;font-size:14px;color:var(--ink-2)">Puedes abrir W2 igual: <span style="text-decoration:underline">ir a W2</span></div>
+        </div>
+        <span style="font-size:13px;color:var(--ink-2)">semana incompleta</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="border:1.5px solid var(--ok);border-radius:10px;padding:20px 22px;background:var(--ok-soft);display:flex;align-items:center;justify-content:space-between;gap:16px">
+          <div><div style="font:500 13px 'JetBrains Mono',monospace;color:var(--ok)">W1 · 8/8 ✓</div><div style="font:700 22px/1.15 'Bricolage Grotesque',sans-serif;margin-top:4px">Siguiente: Bucles</div></div>
+          <button style="font:700 16px 'Atkinson Hyperlegible',sans-serif;padding:12px 20px;border:0;border-radius:8px;background:var(--accent);color:#fff;white-space:nowrap">Siguiente semana →</button>
+        </div>
+        <span style="font-size:13px;color:var(--ink-2)">semana completa</span>
+      </div>
+      <div style="grid-column:1 / -1;display:flex;flex-direction:column;gap:8px">
+        <nav aria-label="Semanas" style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+          <a href="#" style="display:flex;flex-direction:column;gap:4px;padding:18px 4px;text-decoration:none;color:var(--ink)"><span style="font:500 12px 'JetBrains Mono',monospace;color:var(--ink-2)">← ANTERIOR · W0</span><span style="font:700 18px 'Bricolage Grotesque',sans-serif">Funciones y variables</span></a>
+          <a href="#" style="display:flex;flex-direction:column;gap:4px;padding:18px 4px;text-align:right;border-left:1px solid var(--line);text-decoration:none;color:var(--ink)"><span style="font:500 12px 'JetBrains Mono',monospace;color:var(--ink-2)">SIGUIENTE · W2 →</span><span style="font:700 18px 'Bricolage Grotesque',sans-serif">Bucles</span></a>
+        </nav>
+        <span style="font-size:13px;color:var(--ink-2)">pie de semana · si la siguiente no está cargada: texto --ink-3, "sin cargar", no clicable · teclas [ y ]</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:start">
+    <div><div style="font:700 18px 'Bricolage Grotesque',sans-serif">Código estático + Copiar</div><div style="font-size:14px;color:var(--ink-2);margin-top:4px;line-height:1.45">examples[] en 03. Botón siempre visible (no solo en hover: también móvil).</div></div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+          <div style="display:flex;align-items:center;padding:6px 6px 6px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);font:500 13px 'JetBrains Mono',monospace;color:var(--ink-2)"><span>if / elif / else</span><button style="margin-left:auto;font:700 13px 'Atkinson Hyperlegible',sans-serif;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)">Copiar</button></div>
+          <div style="padding:12px 16px;background:var(--bg);font:400 15px/24px 'JetBrains Mono',monospace;white-space:pre"><span style="color:var(--kw)">if</span> x &lt; y:
+    <span style="color:var(--fn)">print</span>(<span style="color:var(--str)">"menor"</span>)
+<span style="color:var(--kw)">elif</span> x &gt; y:
+    <span style="color:var(--fn)">print</span>(<span style="color:var(--str)">"mayor"</span>)
+<span style="color:var(--kw)">else</span>:
+    <span style="color:var(--fn)">print</span>(<span style="color:var(--str)">"igual"</span>)</div>
+        </div>
+        <span style="font-size:13px;color:var(--ink-2)">reposo · sin números de línea (solo lectura)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+          <div style="display:flex;align-items:center;padding:6px 6px 6px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);font:500 13px 'JetBrains Mono',monospace;color:var(--ink-2)"><span>if / elif / else</span><span style="margin-left:auto;display:flex;gap:6px;align-items:center"><button style="font:700 13px 'Atkinson Hyperlegible',sans-serif;padding:6px 10px;border:1px solid var(--ok);border-radius:6px;background:var(--ok-soft);color:var(--ok)">✓ Copiado</button><button style="font:700 13px 'Atkinson Hyperlegible',sans-serif;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)">Probar en el editor</button></span></div>
+          <div style="padding:12px 16px;background:var(--bg);font:400 15px/24px 'JetBrains Mono',monospace;white-space:pre;color:var(--ink-2)"><span style="color:var(--kw)">if</span> x &lt; y:
+    <span style="color:var(--fn)">print</span>(<span style="color:var(--str)">"menor"</span>)
+…</div>
+        </div>
+        <span style="font-size:13px;color:var(--ink-2)">copiado · 2 s y vuelve a "Copiar" · aria-live="polite" · foco: outline --accent</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

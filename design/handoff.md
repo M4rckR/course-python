@@ -1,7 +1,13 @@
-# Bitácora CS50P — Handoff de UI v1
+# Bitácora CS50P — Handoff de UI v1.1
 
 Stack: `index.html` + `styles.css` + `app.js` (vanilla). Importa `tokens.css` antes de `styles.css`. Los JSON no cambian.
 Referencia visual: `pantallas/*.html` (export del lienzo, estilos inline con los mismos valores). Todos los colores de este documento son tokens de `tokens.css`.
+
+### Cambios v1.1
+- **8 secciones.** Shorts entra como 04; las demás se corren: 05 Quiz · 06 Practica aquí · 07 Problem set · 08 Proyecto. Donde las pantallas 1a–1h muestran la numeración de 7, manda este documento.
+- Si `shorts[]` falta o está vacío, la sección 04 no se pinta y la numeración visible se recalcula (01–07). Usa siempre el índice visible, nunca un número fijo en el HTML.
+- Datos nuevos usados (ya en los JSON): `transcriptUrl`, `tips[]`, `shorts[{title,url,confirmed}]`. Sin duración (`min`): no se muestra ninguna; si en el futuro llega `min`, va como `500 13px mono --ink-2` a la derecha de cada fila.
+- Nuevos bloques: §14 Flujo CS50 · §15 Shorts · §16 Consejos de David · §17 Transcript · §18 Antes de empezar · §19 Consola de Ejecutar · §20 Fin de semana · §21 Copiar.
 
 ---
 
@@ -36,23 +42,27 @@ Referencia visual: `pantallas/*.html` (export del lienzo, estilos inline con los
       "quiz": { "0": 1, "1": 2 },
       "practice": { "0": { "passed": true, "code": "..." }, "1": { "passed": false, "code": "..." } },
       "pset": { "deep": true },
+      "shorts": { "0": true, "1": true },
       "hintsOpen": { "bank": 1 }
     }
   },
+  "setup": [true, true, false, false],
+  "setupHidden": false,
   "studyDays": ["2026-10-12", "2026-10-13", "2026-10-15"],
   "editorHeight": 7
 }
 ```
 
 **Cuándo una sección está hecha**
-- 01 `summary`, 02 `jsToPy`, 03 `examples`+`traps`, 07 `project` → botón "Marcar como hecho".
-- 04 `quiz` → todas las preguntas respondidas (acertadas o no).
-- 05 `practice` → todos los ejercicios aprobados.
-- 06 `pset` → todos los checkboxes marcados.
+- 01 `summary`(+`tips`), 02 `jsToPy`, 03 `examples`+`traps`, 08 `project` → botón "Marcar como hecho".
+- 04 `shorts` → todos los shorts con `confirmed: true` marcados como vistos. Los `confirmed: false` no bloquean; si se marcan, cuentan en el contador. Si todos son `confirmed: false`, la sección se da por hecha al marcar uno o con "Marcar como hecho".
+- 05 `quiz` → todas las preguntas respondidas (acertadas o no).
+- 06 `practice` → todos los ejercicios aprobados.
+- 07 `pset` → todos los checkboxes marcados.
 
-Avance de la semana = secciones hechas / 7 (redondeo hacia abajo; el mock dice 58%, en código sale 57%).
+Avance de la semana = secciones hechas / secciones visibles (8, o 7 sin shorts), redondeo hacia abajo.
 Progreso global = (ejercicios aprobados + psets marcados) / (total de ejercicios + total de psets en las semanas cargadas).
-Estado de la semana: `sin cargar` (no hay JSON), `cargada` (JSON, 0 hechas), `en curso` (≥1), `completa` (7/7).
+Estado de la semana: `sin cargar` (no hay JSON), `cargada` (JSON, 0 hechas), `en curso` (≥1), `completa` (todas las visibles).
 
 ---
 
@@ -79,7 +89,7 @@ Estado de la semana: `sin cargar` (no hay JSON), `cargada` (JSON, 0 hechas), `en
 - Móvil: logo 18px + valor "13/80" solo; padding `20px 20px 14px`; sin nav (inicio/semana se navega con "← W1 ▾").
 
 ### 1.2 Barra de segmentos `.segments`
-Uso: avance de semana (7), casos de test (n), pasos de foco (7).
+Uso: avance de semana (8, o 7 sin shorts), casos de test (n), shorts vistos (n), pasos de preparación (4), pasos de foco (8).
 - flex, `gap: 3px` (4px en tarjeta continuar). Segmento: `flex: 1; height: 6px; radius: 2px` (5px en móvil, 4px en foco).
 - Colores: hecho `--ok` · actual `--accent` · pendiente `--line` · test fallido `--bad`.
 - En foco desktop: segmentos fijos de 28×4, el actual 44×4.
@@ -203,7 +213,7 @@ Móvil: botones de acción ≥ 48px de alto (`padding: 14px`).
 - `.week-main`: flex column, gap 12.
 
 ### 5.1 Tarjeta de sección `.section-card` (1g, fila 2)
-Se pinta desde el JSON: 01 `summary[]`, 02 `jsToPy[]`, 03 `examples[]`+`traps[]`, 04 `quiz[]`, 05 `practice[]`, 06 `pset[]`+`submit`, 07 `project`.
+Se pinta desde el JSON: 01 `summary[]`+`tips[]`, 02 `jsToPy[]`, 03 `examples[]`+`traps[]`, 04 `shorts[]`, 05 `quiz[]`, 06 `practice[]`, 07 `pset[]`+`submit`, 08 `project`.
 
 | Estado | Aspecto |
 |---|---|
@@ -304,7 +314,7 @@ Tests: `tests[{stdin[] | code, expect}]`. Un test pasa si la salida (trim final)
 Entrar: botón "Modo foco" / tecla **F** (fuera de inputs). Salir: "Salir del foco" / **Esc** (si el foco no está en el editor). Estado en `<html data-mode="focus">`; persistir en `last`.
 
 - Oculta header, pestañas e índice. Un solo **paso** visible.
-- Pasos: 01, 02, 03 = 1 paso cada uno · 04 = 1 paso por pregunta · 05 = 1 paso por ejercicio · 06 = 1 paso (lista completa) · 07 = 1 paso. La barra superior muestra 7 segmentos (secciones); el sub-progreso va en la etiqueta ("PREGUNTA 2 DE 5") y en los puntos del pie.
+- Pasos: 01, 02, 03, 04 = 1 paso cada uno · 05 Quiz = 1 paso por pregunta · 06 Practica = 1 paso por ejercicio · 07 Problem set = 1 paso (lista completa) · 08 = 1 paso. La barra superior muestra un segmento por sección visible (8); el sub-progreso va en la etiqueta ("PREGUNTA 2 DE 5") y en los puntos del pie.
 - **Desktop 1c**: alto viewport, flex column.
   - Header: grid `1fr auto 1fr; height 60; padding 0 32px`. Izq: "Salir del foco `Esc`" `.btn--small 15px`. Centro: segmentos 28×4 (actual 44×4), gap 6. Der: `500 13px mono --ink-2` "W1 · 04 de 07".
   - Contenido: `flex 1; padding 48px 32px 0`; columna `max-width: 680px` centrada, gap 22.
@@ -312,7 +322,7 @@ Entrar: botón "Modo foco" / tecla **F** (fuera de inputs). Salir: "Salir del fo
 - **Móvil 1f**: header `padding 20px 16px 8px` "✕ Salir" + `500 13px mono` "04/07 · 3 de 5"; segmentos alto 4 gap 4 `padding 8px 16px`; contenido `padding 24px 16px; gap 16`; pregunta `700 23px/1.25`; botón "Siguiente →" ancho completo `padding 15px; 700 17px`, fijo abajo.
 - **Siguiente**:
   - Siempre activo (no bloquea): en quiz sin responder, el primer clic muestra "Responde o pulsa otra vez para saltar" `14px --ink-2` encima del botón.
-  - En 01/02/03/07, avanzar marca la sección como hecha.
+  - En 01/02/03/08, avanzar marca la sección como hecha. En 04 Shorts no: solo los checkboxes cuentan.
   - Al pasar de paso: foco al título del nuevo paso; scroll a top; transición `opacity` + `translateY(8px→0)` en `--dur-base` (nada con reduced-motion).
   - Teclas: → / ← (fuera del editor), 1–4 para opciones de quiz.
 - Anterior desactivado en el primer paso (`aria-disabled`, `--ink-3`).
@@ -346,8 +356,8 @@ Entrar: botón "Modo foco" / tecla **F** (fuera de inputs). Salir: "Salir del fo
 
 **Banner de semana completa `.week-complete`**
 - Dónde: sustituye a la cabecera de la semana (debajo del h1) y se muestra también en la tarjeta de la semana en Inicio. Persiste (no es temporal) hasta abrir la siguiente semana.
-- `padding 18px 20px; border 1.5px --ok; radius 10; bg --ok-soft`. Título `700 22px display` "Semana 1 completa" + `500 13px mono --ok` "7/7". Segmentos alto 6 en `--ok` con `margin 12px 0`. Pie `15px`: ritmo `--ink-2` ("Vas 2 días por delante del ritmo.") + "Abrir W2 →" `700 --accent`.
-- Animación única al completarse: los 7 segmentos se llenan uno a uno (stagger 60ms, 160ms cada uno). Con reduced-motion aparecen llenos.
+- `padding 18px 20px; border 1.5px --ok; radius 10; bg --ok-soft`. Título `700 22px display` "Semana 1 completa" + `500 13px mono --ok` "8/8". Segmentos alto 6 en `--ok` con `margin 12px 0`. Pie `15px`: ritmo `--ink-2` ("Vas 2 días por delante del ritmo.") + "Abrir W2 →" `700 --accent`.
+- Animación única al completarse: los segmentos se llenan uno a uno (stagger 60ms, 160ms cada uno). Con reduced-motion aparecen llenos.
 
 ---
 
@@ -370,4 +380,162 @@ Ver `tokens.css`. Escala tipográfica de referencia:
 
 ## 13. Archivos
 - `tokens.css` — variables.
-- `pantallas/1a-inicio-desktop.html`, `1b-semana-desktop-oscuro.html`, `1c-foco-desktop.html`, `1d-inicio-movil.html`, `1e-semana-movil-oscuro.html`, `1f-foco-movil.html`, `1g-componentes.html`, `1h-tokens.html` — export estático del lienzo (estilos inline, referencia visual; no es el código final).
+- `pantallas/1a-inicio-desktop.html`, `1b-semana-desktop-oscuro.html`, `1c-foco-desktop.html`, `1d-inicio-movil.html`, `1e-semana-movil-oscuro.html`, `1f-foco-movil.html`, `1g-componentes.html`, `1h-tokens.html` — turno 1 (numeración de 7 secciones; ver Cambios v1.1).
+- `pantallas/2a-semana-flujo-shorts-desktop.html`, `2b-shorts-movil-oscuro.html`, `2c-estados-flujo-shorts.html`, `2d-inicio-antes-de-empezar-desktop.html`, `2e-antes-de-empezar-movil.html`, `2f-ciclo-checklist.html`, `2g-extras-consola-fin-copiar.html` — turno 2 (8 secciones).
+- Todo es export estático del lienzo (estilos inline, referencia visual; no es el código final).
+
+---
+
+## 14. Flujo CS50 `.cs50-flow` (2a, 2b, 2c)
+```html
+<nav class="cs50-flow" aria-label="Flujo de la semana">
+  <a class="cs50-flow__step" href="#s-summary" data-state="done">✓ Clase</a>
+  <span class="cs50-flow__sep" aria-hidden="true">→</span>
+  <a class="cs50-flow__step" href="#s-shorts" data-state="current" aria-current="step">Shorts 2/4</a>
+  <span class="cs50-flow__sep" aria-hidden="true">→</span>
+  <a class="cs50-flow__step" href="#s-pset" data-state="pending">Problem set</a>
+</nav>
+```
+- Va en la cabecera de semana, debajo del h1 (`gap 14px` con el bloque de título). Desktop y móvil.
+- Contenedor flex, `gap 8px` (6 en móvil), `font: 500 13px mono` (12 en móvil). Separador "→" `--ink-3`.
+- Paso: `padding 5px 11px` (5px 9px móvil); `border-radius: var(--radius-pill)`; altura táctil en móvil vía `min-height: 44px` en el `<a>` con `display:inline-flex; align-items:center` y padding vertical transparente.
+  - done: `border 1px --line; color --ok`; texto "✓ Clase".
+  - current: `border 1px --accent; bg --accent-soft; color --accent; 700`; con contador ("Clase 1/3", "Shorts 2/4", "Problem set 1/5").
+  - pending: `border: var(--border-dashed); color --ink-2`.
+  - todo hecho: un único chip `border 1px --ok; bg --ok-soft; --ok` "✓ Clase → ✓ Shorts → ✓ Problem set".
+- Reglas: Clase = secciones 01–03 (contador = cuántas de las 3 hechas) · Shorts = 04 · Problem set = 07. Paso actual = el primero no hecho. Quiz, Practica y Proyecto no aparecen (son de la app, no del flujo oficial).
+- Sin `shorts[]`: el paso Shorts y su flecha no se pintan.
+- Móvil: "Problem set" se abrevia "Pset".
+- Clic: igual que el índice (scroll + foco al h2).
+
+## 15. Sección Shorts `#s-shorts` (2a, 2b, 2c)
+```html
+<section id="s-shorts" class="section-card" data-state="current">
+  <header class="section-card__head">
+    <span class="section-card__num">04 · Ahora</span><h2>Shorts</h2>
+    <div class="segments" aria-hidden="true">…</div><span class="section-card__count">2/4 vistos</span>
+  </header>
+  <p class="section-card__lead">Videos cortos de un solo tema. Míralos después de la clase y antes del problem set.</p>
+  <ul class="shorts">
+    <li class="short" data-seen="true">
+      <input type="checkbox" id="short-1-0" checked><label for="short-1-0" class="visually-hidden">Visto</label>
+      <a class="short__title" href="{url}" target="_blank" rel="noopener">Conditionals ↗</a>
+    </li>
+    <li class="short" data-confirmed="false">
+      …<span class="chip chip--unconfirmed">sin confirmar</span>
+      <p class="short__note">No sé si este short es oficialmente de W1. Cuenta para el avance solo si lo marcas.</p>
+    </li>
+  </ul>
+</section>
+```
+- Tarjeta = §5.1 (pending / current / done). Cabecera: segmentos de 22×6 (uno por short, gap 3) + contador `500 14px mono --ink-2` "2/4 vistos" (`gap 10`).
+- Lead `15px --ink-2; margin-top 8`.
+- Lista `margin-top 14`. Fila `.short`: grid `28px minmax(0,1fr) auto; gap 12; padding 12px 0; border-top 1px --line; align center` (`start` si hay nota).
+  - Checkbox 20×20 igual que pset (§5.5). Visto: `bg --ok` ✓.
+  - Título: enlace `16px`. Sin ver: `700 --accent` + "↗". Visto: `400 --ink-2; line-through`.
+  - Columna `auto` reservada para `min` (hoy vacía).
+- **Sin confirmar** (`confirmed: false`): chip `500 12px mono --ink-2; padding 2px 7px; border: var(--border-unconfirmed); radius pill`, junto al título (`gap 10`, flex-wrap). Nota `14px/1.45 --ink-2; margin-top 4`. Texto fijo en `app.js`.
+- Estados de la sección:
+  - **sin ver** (0/n): tarjeta pending, todos los segmentos `--line`.
+  - **parcial**: tarjeta current (`border 1.5px --accent`, "04 · AHORA").
+  - **completo**: fila plegada "04 Shorts · 4 vistos — ✓ Hecho · abrir".
+- Marcar es instantáneo (sin toast). Al completar la sección: el paso Shorts del flujo pasa a done y el índice muestra ✓.
+- **Móvil (2b)**: sin caja; título `700 22px` + contador `500 13px mono`. Fila: grid `32px minmax(0,1fr) auto; gap 8; min-height 52px`; toda la fila es `<label>` (tap ≥ 44px) salvo el enlace. Checkbox 22×22. Nota sin confirmar: chip + "Puede no ser de W1." en una línea. Barra fija inferior con botón secundario "Ir al quiz →" (ancho completo, `padding 14px`).
+- Índice lateral y chips móviles: item "04 Shorts" con contador `2/4`.
+
+## 16. Consejos de David `.tips` (2a, 2c)
+```html
+<aside class="tips" aria-labelledby="tips-t">
+  <div class="tips__label"><p id="tips-t">Consejos de David</p><p>dichos en la clase</p></div>
+  <ol class="tips__list"><li><span class="tips__key">a</span><span class="tips__text">Legibilidad antes que una sola línea…</span></li></ol>
+</aside>
+```
+- Dentro de 01 En corto, después de la lista `summary`. `margin-top 22px; padding-top 18px; border-top: var(--border-dashed)`.
+- Desktop: grid `150px minmax(0,1fr); gap 20`. Etiqueta: label mono `12px --ink-2; ls 0.05em` "CONSEJOS DE DAVID" + `13px --ink-2` "dichos en la clase" (`margin-top 4`).
+- Lista sin viñetas, `gap 12`. Item grid `22px 1fr; gap 6`. Índice a/b/c/d `500 13px/26px mono --ink-3`. Texto `500 18px/1.4 var(--font-display)`, `text-wrap: pretty`, `--ink`. Código inline `500 16px mono` (sin fondo).
+- Lo que lo distingue del resumen: fuente display en vez de body, índice en letras, línea discontinua. Sin color, fondo ni borde lateral.
+- Máximo 4 (`tips.slice(0,4)`). Vacío o ausente → no se pinta.
+- < 640px: una columna (etiqueta encima, `gap 10`); texto 17px.
+- Markdown mínimo igual que el resto.
+
+## 17. Enlaces de clase (2a, 2b)
+- Índice lateral: bloque bajo la nav, `padding-top 16; border-top 1px --line; gap 8`. Label mono 12 "CLASE {n}" + enlaces `15px --accent`: "Notas de la clase ↗" (`notesUrl`), "Video ↗" (`videoUrl`), "Transcript ↗" (`transcriptUrl`). Cada uno se omite si falta su URL. `target="_blank" rel="noopener"`.
+- El botón "Modo foco" pasa encima de este bloque (o al header de semana); en 2a se omitió por espacio.
+- Móvil: fila bajo el flujo, `gap 16; 14px`: "Notas ↗ · Video ↗ · Transcript ↗".
+
+## 18. Antes de empezar `.setup` (2d, 2e, 2f)
+Pasos fijos en `app.js` (no vienen del JSON):
+1. Llenar el formulario — "Registro en el curso con tu nombre y correo." → enlace al formulario.
+2. Autorizar GitHub — "Permite que submit50 envíe tus problemas." → enlace a la autorización.
+3. Entrar a cs50.dev — "Abre tu VS Code en la nube con tu cuenta de GitHub." → `https://cs50.dev`.
+4. Ejecutar update50 — "En la terminal de cs50.dev:" + comando copiable `update50`.
+(Las URLs exactas de 1 y 2 salen de las instrucciones de W0; hoy viven al final del pset de W0. Moverlas a una constante `SETUP_STEPS`.)
+
+```html
+<section class="setup" aria-labelledby="setup-t">
+  <header class="setup__head"><p class="label">Antes de empezar · una sola vez</p><h2 id="setup-t">Prepara tu cuenta de CS50</h2>
+    <div class="segments">…</div><span>2 de 4 · ≈ 10 min</span></header>
+  <ol class="setup__steps">
+    <li class="setup-step" data-state="done|current|pending">
+      <input type="checkbox" id="setup-0"><label for="setup-0">Paso 1</label>
+      <h3>Llenar el formulario</h3><p>…</p><a class="btn--primary">Abrir formulario ↗</a>
+    </li>
+  </ol>
+</section>
+```
+- **Dónde**: primer bloque de Inicio, encima de todo, mientras `setup` tenga algún `false` y `!setupHidden`.
+- Caja: `border 1.5px --accent; radius 12; bg --surface; overflow hidden`.
+- Head: `padding 24px 28px 18px`; flex space-between align end. Label `13px mono --accent`; h2 `700 30px/1.1 display; ls -0.02em; margin-top 6`. Derecha: 4 segmentos 28×6 + `500 14px mono --ink-2`.
+- Pasos desktop: `ol` grid `repeat(4, minmax(0,1fr)); border-top 1px --line`; cada `li` `padding 20px 22px; gap 10; border-right 1px --line` (no el último).
+  - Cabecera: checkbox 22×22 radius 5 + label `500 12px mono --ink-2` "PASO n".
+  - Título `700 17px`; descripción `15px/1.45 --ink-2`.
+  - done: check `--ok`, título `--ink-2` tachado, sin botón.
+  - current (primer pendiente): `bg --accent-soft`; checkbox `border 1.5px --accent; bg --surface`; label "PASO n · AHORA" `--accent`; botón primario `700 15px; padding 9px 14px; radius 8` con el enlace externo.
+  - pending: checkbox `border 1.5px --ink-2`; enlace como texto `--accent` (no botón).
+  - Paso 4: caja de comando `padding 6px 6px 6px 12px; border 1px --line; radius 6; bg --bg; 500 14px mono`, prompt "$ " `--ink-3`, botón "Copiar" (§21) a la derecha.
+- Marcar es manual (la app no puede verificar). Abrir el enlace **no** marca el paso.
+- Mientras está incompleto, "Continuar" baja a secundario: caja `border 1px --line; radius 10; padding 22px 28px`, label "DESPUÉS" + `700 24px display` "W0 · Funciones y variables" + botón secundario "Empezar W0 →". La cuenta atrás se compacta (cifra 40px, una fila).
+- **4/4**: la caja se sustituye por la fila "Preparación lista" (`padding 14px 18px; border 1.5px --ok; radius 10; bg --ok-soft`; círculo ✓ 26; sub "Ya puedes enviar problemas con submit50."; "ocultar" subrayado `--ink-2`). Se mantiene esa sesión. Con "ocultar" o en la siguiente carga → `setupHidden = true` y desaparece de Inicio.
+- Después vive en W0 → 07 Problem set como fila plegada "Preparación · 4/4 ✓ · abrir" (desde ahí se puede desmarcar; si se desmarca, `setupHidden = false` y vuelve a Inicio).
+- **Móvil (2e)**: `padding 18`; h2 `700 22px` + "2/4" a la derecha. Pasos en lista vertical: done/pending como `<label>` grid `34px 1fr; min-height 52px; padding 0 18px; border-top 1px --line`. El paso current se expande (`padding 14px 18px 16px; bg --accent-soft`) con descripción y botón (`padding 11px 14px`). Para cs50.dev se añade: "Mejor en la laptop: el editor en la nube no es cómodo en el celular."
+
+## 19. Consola de Ejecutar `.console` (2g)
+Reemplaza el campo de texto con "|".
+```html
+<div class="console" aria-label="Consola">
+  <div class="console__bar"><span>Consola</span><span class="console__status" data-state="waiting">esperando entrada</span><button>Detener</button></div>
+  <div class="console__out" role="log" aria-live="polite">
+    <div class="console__meta">$ python mayor.py</div>
+    <div class="console__line">Edad: <input class="console__input" aria-label="Entrada para input()" autofocus></div>
+  </div>
+  <div class="console__presets">Usar entrada de: <button>caso 1 · 25</button>…</div>
+</div>
+```
+- Aparece bajo las acciones al pulsar "Ejecutar" (sustituye al panel de resultados mientras está abierta; "Comprobar" vuelve a los resultados).
+- Caja: `border 1px --line; radius 10; overflow hidden`. Barra = barra del editor (§5.3): `padding 8px 14px; bg --surface-2; 500 13px mono --ink-2`; "Consola" `--ink`; estado con punto 7×7.
+  - running/waiting: punto + texto `--accent` "esperando entrada"; botón "Detener" a la derecha.
+  - done: "terminó · 0,03 s" `--ink-2`; acciones "Ejecutar de nuevo" (`--accent` subrayado) y "Limpiar".
+  - error: estado "error · línea 3" `--bad`; traceback en `--bad`; la línea se marca en el editor (§5.4).
+- Salida: `padding 12px 14px 14px; bg --bg; font 400 15px/24px mono; min-height 120px; max-height 320px; overflow-y auto` (autoscroll al final).
+  - Meta (`$ python {archivo}`, `— fin (código 0) —`): `--console-meta`.
+  - Salida del programa: `--ink`.
+  - Texto introducido (ya enviado): `--console-input; 500`.
+- **input()**: Skulpt `inputfun` devuelve una Promise; se pinta el prompt del código (`"Edad: "`) seguido de un `<input>` en línea: `min-width 120px; height 26px; padding 0 6px; border 0; border-bottom 2px solid --console-input; bg --console-input-bg; color --console-input; font heredado`. Foco automático. Enter envía; a la derecha, pista `500 12px mono --ink-2` "↵ enviar". Cada `input()` crea su propia línea.
+- **Presets**: fila `padding 10px 14px; border-top 1px --line; gap 6; 14px`: "Usar entrada de:" + un chip por test con `stdin` (`500 13px mono; padding 4px 9px; radius pill; border 1px --line; bg --surface`), etiqueta "caso n · {stdin.join(', ')}" truncada a 24 car. Chip de un caso fallido: `border --bad; bg --bad-soft; --bad`. Clic → reinicia y rellena cada `input()` en orden (se ven escritos en azul, sin pausa).
+- Tests con `code` en vez de `stdin` no generan chip.
+- Pie informativo (solo primera vez): "Lo que escribiste va en azul; lo que imprime tu programa, en tinta." `14px --ink-2`.
+- Móvil: misma consola, `font 14px/22px`; el `<input>` usa `inputmode="text"` y `enterkeyhint="send"`; presets en scroll horizontal.
+
+## 20. Fin de semana (2g)
+Después de 08 Proyecto, siempre.
+- **Incompleta** `.week-end--pending`: `border: var(--border-dashed); radius 10; padding 20px 22px`. Título `700 20px display` "Te faltan N secciones". Chips enlace a cada sección pendiente (`500 14px mono; padding 6px 10px; radius 6; border 1px --line; --ink`; la primera pendiente con `border --accent; --accent`), texto "06 Practica · 1/3". Pie `14px --ink-2`: "Puedes abrir W2 igual: ir a W2" (subrayado).
+- **Completa** `.week-end--done`: `border 1.5px --ok; radius 10; padding 20px 22px; bg --ok-soft`; flex space-between. Izq: `500 13px mono --ok` "W1 · 8/8 ✓" + `700 22px/1.15 display` "Siguiente: {title}". Der: primario "Siguiente semana →" (`padding 12px 20px`). Si la siguiente no está cargada: botón deshabilitado + "W2 aún no está cargada" `14px --ink-2`. W9 completa: "Curso terminado" y sin botón.
+- Convive con el banner de semana completa de §9 (ese va arriba; este, abajo).
+- **Pie anterior/siguiente** `.week-pager`: `nav` grid `1fr 1fr; border-top/bottom 1px --line; margin-top 32px`. Enlace `padding 18px 4px; gap 4; flex column`: label `500 12px mono --ink-2` "← ANTERIOR · W0" / "SIGUIENTE · W2 →" + título `700 18px display --ink`. Derecho con `text-align right; border-left 1px --line`. Hover: título `--accent`. W0 sin anterior / W9 sin siguiente → celda vacía. Semana sin cargar: textos `--ink-3`, "sin cargar", `aria-disabled`. Teclas `[` y `]` (fuera de inputs). Móvil: se mantiene en 2 columnas, título 16px.
+
+## 21. Botón Copiar (2g, 2d)
+- Bloque de código estático (03 `examples[]`): barra `padding 6px 6px 6px 14px; border-bottom 1px --line; bg --surface-2; 500 13px mono --ink-2` con `label` del ejemplo a la izquierda y botón a la derecha. Cuerpo `padding 12px 16px; bg --bg; 400 15px/24px mono; white-space pre; overflow-x auto`; resaltado igual que el editor, **sin** números de línea.
+- Botón `.btn-copy`: `700 13px body; padding 6px 10px; border 1px --line; radius 6; bg --surface; --ink`. Siempre visible (también en móvil). Hover `bg --surface-2`; foco outline estándar.
+- Clic → `navigator.clipboard.writeText(code)`; estado "✓ Copiado" `border --ok; bg --ok-soft; --ok` durante **2 s** y vuelve. Anunciar con región `aria-live="polite"` oculta. Si falla el portapapeles: seleccionar el texto del bloque y mostrar "Selecciona y copia" `--ink-2`.
+- Junto a "Copiado" aparece "Probar en el editor" (secundario, mismo tamaño): pega el código en el editor del ejercicio activo de 06 Practica **solo si** el editor está igual al `starter`; si no, pide confirmación inline.
+- El comando `update50` de §18 usa el mismo botón.

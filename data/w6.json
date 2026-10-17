@@ -1,1 +1,259 @@
-{"week": 6, "title": "Archivos (File I/O)", "time": "lectura 25 min · práctica 3 h", "topics": ["open · modos · with", "readlines · rstrip · split", "sorted · key · lambda", "csv: reader · DictReader · DictWriter", "archivos binarios · PIL"], "notesUrl": "https://cs50.harvard.edu/python/notes/6/", "videoUrl": "https://cs50.harvard.edu/python/weeks/6/", "summary": ["`open(\"names.txt\", \"w\")` escribe (y **borra** lo anterior), `\"a\"` agrega al final, `\"r\"` lee. Con `file.write(...)` escribes; el salto de línea lo pones tú: `f\"{name}\\n\"`.", "Con `file = open(...)` debes llamar `file.close()`; con `with open(...) as file:` se cierra solo.", "`file.readlines()` devuelve una lista de líneas, pero lo más simple es `for line in file:`. Cada línea trae `\\n`: usa `line.rstrip()`.", "`name, house = line.rstrip().split(\",\")` separa y desempaqueta en dos variables.", "Puedes guardar cada fila como **dict** (`{\"name\": name, \"house\": house}`) dentro de una lista.", "`sorted(lista, key=...)` ordena por la función que le des; con `lambda student: student[\"name\"]` no necesitas definir una función aparte. Agrega `reverse=True` para orden descendente.", "`split(\",\")` falla si un campo trae comas (`\"Number Four, Privet Drive\"`): usa el módulo `csv`.", "`csv.reader` da cada fila como lista; `csv.DictReader` usa la fila de encabezado y da dicts (`row[\"name\"]`).", "`csv.DictWriter(file, fieldnames=[\"name\", \"home\"])` + `writer.writerow({...})` escribe filas desde dicts.", "Los archivos **binarios** (imágenes) se manejan con `PIL` (Pillow): `Image.open(...)` y `images[0].save(\"costumes.gif\", save_all=True, append_images=[...], duration=200, loop=0)` crea un GIF animado."], "jsToPy": [{"js": "fs.appendFileSync(f, s)", "py": "with open(f, \"a\") as file: file.write(s)", "note": "Modo `\"a\"` agrega, `\"w\"` sobrescribe"}, {"js": "text.split(\"\\n\")", "py": "for line in file:", "note": "Python itera el archivo línea por línea"}, {"js": "line.trim()", "py": "line.rstrip()", "note": "`rstrip` quita el `\\n` del final"}, {"js": "arr.sort((a, b) => a.name.localeCompare(b.name))", "py": "sorted(l, key=lambda s: s[\"name\"])", "note": "`sorted` devuelve una lista nueva"}, {"js": "(x) => x.name", "py": "lambda x: x[\"name\"]", "note": "Una sola expresión"}, {"js": "papaparse (CSV con header)", "py": "csv.DictReader(file)", "note": "Cada fila es un dict"}], "examples": [{"label": "Agregar a un archivo con `with` (de las notas):", "code": "name = input(\"What's your name? \")\n\nwith open(\"names.txt\", \"a\") as file:\n    file.write(f\"{name}\\n\")"}, {"label": "Leer y ordenar nombres:", "code": "names = []\n\nwith open(\"names.txt\") as file:\n    for line in file:\n        names.append(line.rstrip())\n\nfor name in sorted(names):\n    print(f\"hello, {name}\")"}, {"label": "Ordenar dicts con lambda:", "code": "students = []\n\nwith open(\"students.csv\") as file:\n    for line in file:\n        name, house = line.rstrip().split(\",\")\n        students.append({\"name\": name, \"house\": house})\n\nfor student in sorted(students, key=lambda student: student[\"name\"]):\n    print(f\"{student['name']} is in {student['house']}\")"}, {"label": "Leer CSV con encabezado (DictReader):", "code": "import csv\n\nstudents = []\n\nwith open(\"students.csv\") as file:\n    reader = csv.DictReader(file)\n    for row in reader:\n        students.append({\"name\": row[\"name\"], \"home\": row[\"home\"]})\n\nfor student in sorted(students, key=lambda student: student[\"name\"]):\n    print(f\"{student['name']} is in {student['home']}\")"}, {"label": "Escribir una fila CSV (DictWriter):", "code": "import csv\n\nname = input(\"What's your name? \")\nhome = input(\"Where's your home? \")\n\nwith open(\"students.csv\", \"a\") as file:\n    writer = csv.DictWriter(file, fieldnames=[\"name\", \"home\"])\n    writer.writerow({\"name\": name, \"home\": home})"}], "traps": ["Abrir con `\"w\"` **borra** el contenido anterior; para agregar usa `\"a\"`.", "`file.write(name)` no agrega salto de línea: escribe `f\"{name}\\n\"`.", "Al leer, cada línea trae `\\n`; sin `rstrip()` el `print` deja líneas vacías de más.", "`line.split(\",\")` se rompe con campos que contienen comas: para CSV reales usa `csv`.", "Todo lo que lees de un CSV es `str`: convierte montos con `float()`.", "En los problemas, errores como archivo inexistente o extensión incorrecta se manejan con `sys.exit(...)` (revisa cada enunciado)."], "quiz": [{"q": "¿Qué modo agrega al final sin borrar?", "options": ["\"r\"", "\"w\"", "\"a\"", "\"x\""], "answer": 2, "why": "`a` es append; `w` sobrescribe."}, {"q": "¿Qué ventaja tiene `with open(...) as file:`?", "options": ["Es más rápido", "Cierra el archivo automáticamente", "Lee en binario", "Ordena las líneas"], "answer": 1, "why": "Te ahorra llamar `file.close()`."}, {"q": "¿Qué da `csv.DictReader` por cada fila?", "options": ["Una lista", "Un str", "Un dict con las columnas del encabezado", "Una tupla"], "answer": 2, "why": "Usa la primera fila como llaves: `row[\"name\"]`."}, {"q": "¿Por qué usar `csv` en vez de `line.split(\",\")`?", "options": ["Es obligatorio", "`split` falla si un campo tiene comas dentro de comillas", "`split` no existe en archivos", "csv es más lento"], "answer": 1, "why": "`\"Number Four, Privet Drive\"` rompería el `split` por comas."}, {"q": "¿Qué hace `key=lambda student: student[\"name\"]` en `sorted`?", "options": ["Filtra por nombre", "Ordena usando el nombre de cada dict", "Invierte la lista", "Borra duplicados"], "answer": 1, "why": "`key` le dice a `sorted` por qué valor comparar."}], "submit": "Prueba con `check50` y envía con `submit50` (el comando exacto está en cada enunciado). Plazo del ciclo: **31 dic 2026**.", "pset": [{"name": "Lines of Code", "url": "https://cs50.harvard.edu/python/psets/6/lines/", "task": "En `lines.py`, recibe un archivo `.py` por línea de comandos y cuenta sus líneas de código sin comentarios ni líneas en blanco.", "hints": ["Con `lstrip()` + `startswith(\"#\")` detectas comentarios con sangría; una línea solo con espacios cuenta como en blanco.", "Errores con `sys.exit`: pocos/muchos argumentos, `Not a Python file`, `File does not exist` (atrapa `FileNotFoundError`)."]}, {"name": "Pizza Py", "url": "https://cs50.harvard.edu/python/psets/6/pizza/", "task": "En `pizza.py`, recibe un `.csv` por línea de comandos e imprime su contenido como tabla ASCII con `tabulate` en formato `grid`.", "hints": ["`pip install tabulate`; lee con `csv.reader` o `DictReader`.", "Valida: un solo argumento, que termine en `.csv` y que el archivo exista (todo con `sys.exit`)."]}, {"name": "Scourgify", "url": "https://cs50.harvard.edu/python/psets/6/scourgify/", "task": "En `scourgify.py`, lee un CSV de entrada con `name` (\"Last, First\") y `house` y escribe un CSV nuevo con columnas `first`, `last`, `house`.", "hints": ["`csv.DictReader` para leer y `csv.DictWriter` con `fieldnames` y `writeheader()` para escribir.", "Exige exactamente 2 argumentos; si no puedes leer el archivo, `sys.exit` con `Could not read` + nombre."]}, {"name": "CS50 P-Shirt", "url": "https://cs50.harvard.edu/python/psets/6/shirt/", "task": "En `shirt.py`, recibe archivo de entrada y de salida (jpg/jpeg/png), ajusta la foto con `ImageOps.fit` al tamaño de `shirt.png`, pégale la camiseta encima y guarda.", "hints": ["Usa `Image.open`, `ImageOps.fit`, `Image.paste` (la camiseta sirve de máscara) e `Image.save`.", "`os.path.splitext` te da la extensión; valida 2 argumentos, extensiones válidas e iguales, y que la entrada exista."]}], "practice": [{"name": "Parsea una línea", "prompt": "Escribe `parse_line(line)` que reciba `\"2026-10-01,Starbucks,18.90\"` y devuelva un dict con `fecha`, `comercio` y `monto` (float). En el navegador no hay archivos: practicamos con texto.", "starter": "def parse_line(line):\n    ...\n", "tests": [{"code": "r = parse_line(\"2026-10-01,Starbucks,18.90\")\nprint(r[\"comercio\"], r[\"monto\"])", "expect": "Starbucks 18.9"}, {"code": "print(parse_line(\"2026-10-02,Uber,12\\n\")[\"monto\"])", "expect": "12.0"}]}, {"name": "Top de gastos", "prompt": "Escribe `top(gastos, n)` que reciba una lista de dicts con `comercio` y `monto`, y devuelva los nombres de los n más caros, de mayor a menor. Usa `sorted` con `lambda`.", "starter": "def top(gastos, n):\n    ...\n", "tests": [{"code": "g = [{\"comercio\": \"A\", \"monto\": 5}, {\"comercio\": \"B\", \"monto\": 50}, {\"comercio\": \"C\", \"monto\": 20}]\nprint(top(g, 2))", "expect": "['B', 'C']"}]}], "project": {"goal": "Tu tracker ya **guarda** los gastos.", "steps": ["Cada gasto nuevo se agrega a `gastos.csv` con `csv.DictWriter` en modo `\"a\"`.", "`python tracker.py resumen` lee el CSV con `DictReader` y suma por categoría.", "Muestra el top 3 de gastos con tu función de práctica."]}, "sources": ["https://cs50.harvard.edu/python/notes/6/", "https://cs50.harvard.edu/python/psets/6/", "https://cs50.harvard.edu/python/psets/6/lines/", "https://cs50.harvard.edu/python/psets/6/pizza/", "https://cs50.harvard.edu/python/psets/6/scourgify/", "https://cs50.harvard.edu/python/psets/6/shirt/"]}
+{
+ "week": 6,
+ "title": "Archivos (File I/O)",
+ "time": "lectura 25 min · práctica 3 h",
+ "topics": [
+  "open · modos · with",
+  "readlines · rstrip · split",
+  "sorted · key · lambda",
+  "csv: reader · DictReader · DictWriter",
+  "archivos binarios · PIL"
+ ],
+ "notesUrl": "https://cs50.harvard.edu/python/notes/6/",
+ "videoUrl": "https://cs50.harvard.edu/python/weeks/6/",
+ "summary": [
+  "Punto de partida: las variables y listas viven en **memoria** y desaparecen cuando el programa termina. Para que los datos persistan hay que guardarlos en **archivos** (File I/O).",
+  "`open(\"names.txt\", \"w\")` + `file.write(name)` + `file.close()`. Con `\"w\"` cada ejecución **borra** lo anterior; con `\"a\"` (append) agrega, pero `write` no pone salto de línea: los nombres salen pegados hasta que escribes `f\"{name}\\n\"`.",
+  "`with open(...) as file:` cierra el archivo automáticamente \"para no olvidarme\".",
+  "Leer: `file.readlines()` o, más simple, `for line in file:`. Cada línea trae su `\\n` y `print` agrega otro → líneas en blanco; se arregla con `line.rstrip()`. Para ordenar, primero acumula en una lista y luego `sorted(names)` (o `reverse=True`).",
+  "**CSV**: `students.csv` con `name,house`. `name, house = line.rstrip().split(\",\")` desempaqueta en dos variables. Ordenar las oraciones ya armadas \"funciona por suerte\"; mejor guardar cada fila como **dict** en una lista.",
+  "`sorted(students, key=get_name)`: le pasas la **función** (sin paréntesis) y `sorted` la llama por ti. Luego la reemplaza por una `lambda student: student[\"name\"]`, \"una función anónima, que no tiene nombre\".",
+  "Si un dato trae coma (`Harry,\"Number Four, Privet Drive\"`), `split(\",\")` da `ValueError: too many values to unpack`. Solución: el módulo `csv` (`csv.reader`) que entiende las comillas.",
+  "`csv.DictReader` usa la fila de encabezado (`name,home`) y te da dicts (`row[\"name\"]`), así el código no se rompe si alguien reordena columnas. Para escribir: `csv.writer` + `writerow([...])` y `csv.DictWriter(file, fieldnames=[...])` + `writerow({...})`.",
+  "Archivos **binarios**: con Pillow (`from PIL import Image`) en `costumes.py` abre imágenes pasadas por `sys.argv[1:]` y arma un GIF animado con `images[0].save(..., save_all=True, append_images=[images[1]], duration=200, loop=0)`."
+ ],
+ "jsToPy": [
+  {
+   "js": "fs.writeFileSync(f, s)",
+   "py": "with open(f, \"w\") as file: file.write(s)",
+   "note": "`\"w\"` sobrescribe todo"
+  },
+  {
+   "js": "fs.appendFileSync(f, s)",
+   "py": "with open(f, \"a\") as file: file.write(s)",
+   "note": "`write` no agrega `\\n`"
+  },
+  {
+   "js": "fs.readFileSync(f, \"utf8\").split(\"\\n\")",
+   "py": "for line in file:",
+   "note": "Python itera el archivo línea por línea"
+  },
+  {
+   "js": "line.trimEnd()",
+   "py": "line.rstrip()",
+   "note": "Quita el `\\n` del final"
+  },
+  {
+   "js": "const [name, house] = line.split(\",\")",
+   "py": "name, house = line.split(\",\")",
+   "note": "Si sobran valores: `ValueError`"
+  },
+  {
+   "js": "[...arr].sort((a, b) => a.name.localeCompare(b.name))",
+   "py": "sorted(l, key=lambda s: s[\"name\"])",
+   "note": "`sorted` devuelve una lista nueva; `reverse=True` invierte"
+  },
+  {
+   "js": "(x) => x.name",
+   "py": "lambda x: x[\"name\"]",
+   "note": "Función anónima de una sola expresión"
+  },
+  {
+   "js": "papaparse con header: true",
+   "py": "csv.DictReader(file)",
+   "note": "Cada fila es un dict"
+  }
+ ],
+ "examples": [
+  {
+   "label": "names.py — versión de clase (escribir con append y with):",
+   "code": "name = input(\"What's your name? \")\n\nwith open(\"names.txt\", \"a\") as file:\n    file.write(f\"{name}\\n\")"
+  },
+  {
+   "label": "names.py — versión de clase (leer, limpiar y ordenar):",
+   "code": "names = []\n\nwith open(\"names.txt\") as file:\n    for line in file:\n        names.append(line.rstrip())\n\nfor name in sorted(names):\n    print(f\"hello, {name}\")"
+  },
+  {
+   "label": "students.py — versión de clase (dicts + key con función y con lambda):",
+   "code": "students = []\n\nwith open(\"students.csv\") as file:\n    for line in file:\n        name, house = line.rstrip().split(\",\")\n        students.append({\"name\": name, \"house\": house})\n\n\ndef get_name(student):\n    return student[\"name\"]\n\n\nfor student in sorted(students, key=get_name):\n    print(f\"{student['name']} is in {student['house']}\")\n\n# students.py (después, con lambda)\nstudents = []\n\nwith open(\"students.csv\") as file:\n    for line in file:\n        name, house = line.rstrip().split(\",\")\n        students.append({\"name\": name, \"house\": house})\n\nfor student in sorted(students, key=lambda student: student[\"name\"]):\n    print(f\"{student['name']} is in {student['house']}\")"
+  },
+  {
+   "label": "students.py y costumes.py — versiones con csv y Pillow:",
+   "code": "import csv\n\nstudents = []\n\nwith open(\"students.csv\") as file:\n    reader = csv.DictReader(file)\n    for row in reader:\n        students.append({\"name\": row[\"name\"], \"home\": row[\"home\"]})\n\nfor student in sorted(students, key=lambda student: student[\"name\"]):\n    print(f\"{student['name']} is in {student['home']}\")\n\n# costumes.py\nimport sys\n\nfrom PIL import Image\n\nimages = []\n\nfor arg in sys.argv[1:]:\n    image = Image.open(arg)\n    images.append(image)\n\nimages[0].save(\n    \"costumes.gif\", save_all=True, append_images=[images[1]], duration=200, loop=0\n)"
+  }
+ ],
+ "traps": [
+  "Abrir con `\"w\"` **borra** lo que había: en clase solo sobrevivía el último nombre. Para agregar usa `\"a\"`.",
+  "`file.write(name)` no agrega salto de línea: con `\"a\"` los nombres salían pegados (`HermioneHarryRon`). Escribe `f\"{name}\\n\"`.",
+  "Al leer, cada línea ya trae `\\n` y `print` agrega otro: salen líneas en blanco. Usa `line.rstrip()`.",
+  "Ordenar las oraciones ya armadas (`\"Harry is in Gryffindor\"`) solo funciona por suerte: ordena por el dato (`key=...`), no por el texto final.",
+  "`key=get_name()` está mal: pasas la función **sin paréntesis** (`key=get_name`) y `sorted` la llama.",
+  "Una coma dentro del dato (`Number Four, Privet Drive`) rompe `split(\",\")` con `ValueError: too many values to unpack`: usa `csv`.",
+  "Dentro de un f-string con comillas dobles, usa comillas simples para las llaves: `f\"{student['name']}\"`."
+ ],
+ "quiz": [
+  {
+   "q": "En clase, David corre `names.py` tres veces con `open(\"names.txt\", \"w\")`. ¿Qué queda en el archivo?",
+   "options": [
+    "Solo el último nombre",
+    "Los tres nombres",
+    "Nada",
+    "Un error"
+   ],
+   "answer": 0,
+   "why": "`\"w\"` vacía el archivo cada vez que lo abres; para acumular se usa `\"a\"`."
+  },
+  {
+   "q": "Lee `names.txt` con `for line in file: print(line)` y salen líneas en blanco entre nombres. ¿Por qué?",
+   "options": [
+    "El archivo está corrupto",
+    "Falta `file.close()`",
+    "`for` lee de dos en dos",
+    "Cada línea ya trae `\\n` y `print` agrega otro"
+   ],
+   "answer": 3,
+   "why": "Se arregla con `line.rstrip()`."
+  },
+  {
+   "q": "¿Cómo le pasa `get_name` a `sorted`?",
+   "options": [
+    "`key=get_name()`",
+    "`key=get_name`",
+    "`key=\"get_name\"`",
+    "`sort=get_name`"
+   ],
+   "answer": 1,
+   "why": "Pasas la función misma, sin paréntesis; `sorted` la llama con cada elemento."
+  },
+  {
+   "q": "¿Qué error sale al hacer `name, house = line.rstrip().split(\",\")` con `Harry,Number Four, Privet Drive`?",
+   "options": [
+    "`IndexError`",
+    "`TypeError`",
+    "`ValueError: too many values to unpack`",
+    "Ninguno"
+   ],
+   "answer": 2,
+   "why": "La coma extra genera 3 valores para 2 variables; el módulo `csv` maneja el texto entre comillas."
+  },
+  {
+   "q": "¿Qué ventaja tiene `csv.DictReader` según la clase?",
+   "options": [
+    "Usa el encabezado y te da dicts, así no se rompe si reordenan columnas",
+    "Es más rápido",
+    "Ordena las filas",
+    "Convierte todo a números"
+   ],
+   "answer": 0,
+   "why": "Accedes por nombre (`row[\"name\"]`) en vez de por posición."
+  }
+ ],
+ "submit": "Prueba con `check50` y envía con `submit50` (el comando exacto está en cada enunciado). Plazo del ciclo: **31 dic 2026**.",
+ "pset": [
+  {
+   "name": "Lines of Code",
+   "url": "https://cs50.harvard.edu/python/psets/6/lines/",
+   "task": "En `lines.py`, recibe un archivo `.py` por línea de comandos y cuenta sus líneas de código sin comentarios ni líneas en blanco.",
+   "hints": [
+    "Con `lstrip()` + `startswith(\"#\")` detectas comentarios con sangría; una línea solo con espacios cuenta como en blanco.",
+    "Errores con `sys.exit`: pocos/muchos argumentos, `Not a Python file`, `File does not exist` (atrapa `FileNotFoundError`)."
+   ]
+  },
+  {
+   "name": "Pizza Py",
+   "url": "https://cs50.harvard.edu/python/psets/6/pizza/",
+   "task": "En `pizza.py`, recibe un `.csv` por línea de comandos e imprime su contenido como tabla ASCII con `tabulate` en formato `grid`.",
+   "hints": [
+    "`pip install tabulate`; lee con `csv.reader` o `DictReader`.",
+    "Valida: un solo argumento, que termine en `.csv` y que el archivo exista (todo con `sys.exit`)."
+   ]
+  },
+  {
+   "name": "Scourgify",
+   "url": "https://cs50.harvard.edu/python/psets/6/scourgify/",
+   "task": "En `scourgify.py`, lee un CSV de entrada con `name` (\"Last, First\") y `house` y escribe un CSV nuevo con columnas `first`, `last`, `house`.",
+   "hints": [
+    "`csv.DictReader` para leer y `csv.DictWriter` con `fieldnames` y `writeheader()` para escribir.",
+    "Exige exactamente 2 argumentos; si no puedes leer el archivo, `sys.exit` con `Could not read` + nombre."
+   ]
+  },
+  {
+   "name": "CS50 P-Shirt",
+   "url": "https://cs50.harvard.edu/python/psets/6/shirt/",
+   "task": "En `shirt.py`, recibe archivo de entrada y de salida (jpg/jpeg/png), ajusta la foto con `ImageOps.fit` al tamaño de `shirt.png`, pégale la camiseta encima y guarda.",
+   "hints": [
+    "Usa `Image.open`, `ImageOps.fit`, `Image.paste` (la camiseta sirve de máscara) e `Image.save`.",
+    "`os.path.splitext` te da la extensión; valida 2 argumentos, extensiones válidas e iguales, y que la entrada exista."
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "name": "Parsea una línea",
+   "prompt": "Escribe `parse_line(line)` que reciba `\"2026-10-01,Starbucks,18.90\"` y devuelva un dict con `fecha`, `comercio` y `monto` (float). En el navegador no hay archivos: practicamos con texto.",
+   "starter": "def parse_line(line):\n    ...\n",
+   "tests": [
+    {
+     "code": "r = parse_line(\"2026-10-01,Starbucks,18.90\")\nprint(r[\"comercio\"], r[\"monto\"])",
+     "expect": "Starbucks 18.9"
+    },
+    {
+     "code": "print(parse_line(\"2026-10-02,Uber,12\\n\")[\"monto\"])",
+     "expect": "12.0"
+    }
+   ]
+  },
+  {
+   "name": "Top de gastos",
+   "prompt": "Escribe `top(gastos, n)` que reciba una lista de dicts con `comercio` y `monto`, y devuelva los nombres de los n más caros, de mayor a menor. Usa `sorted` con `lambda`.",
+   "starter": "def top(gastos, n):\n    ...\n",
+   "tests": [
+    {
+     "code": "g = [{\"comercio\": \"A\", \"monto\": 5}, {\"comercio\": \"B\", \"monto\": 50}, {\"comercio\": \"C\", \"monto\": 20}]\nprint(top(g, 2))",
+     "expect": "['B', 'C']"
+    }
+   ]
+  }
+ ],
+ "project": {
+  "goal": "Tu tracker ya **guarda** los gastos.",
+  "steps": [
+   "Cada gasto nuevo se agrega a `gastos.csv` con `csv.DictWriter` en modo `\"a\"`.",
+   "`python tracker.py resumen` lee el CSV con `DictReader` y suma por categoría.",
+   "Muestra el top 3 de gastos con tu función de práctica."
+  ]
+ },
+ "sources": [
+  "https://cs50.harvard.edu/python/notes/6/",
+  "https://cs50.harvard.edu/python/psets/6/",
+  "https://cs50.harvard.edu/python/psets/6/lines/",
+  "https://cs50.harvard.edu/python/psets/6/pizza/",
+  "https://cs50.harvard.edu/python/psets/6/scourgify/",
+  "https://cs50.harvard.edu/python/psets/6/shirt/",
+  "https://cdn.cs50.net/python/2022/x/lectures/6/lang/en/lecture6.txt"
+ ],
+ "tips": [
+  "Usa `with` para que el archivo se cierre solo y no dependas de acordarte de `close()`.",
+  "No reinventes el parseo: si existe una librería estándar (como `csv`), úsala en vez de tu propio `split`.",
+  "Guarda los datos con nombre (dicts y encabezado en el CSV) en vez de depender de posiciones: programa a la defensiva, porque otros pueden editar el archivo.",
+  "Ante la duda, revisa primero la documentación."
+ ],
+ "shorts": [
+  {
+   "title": "Reading and Writing Files",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "Reading and Writing CSVs",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "Pillow",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  }
+ ],
+ "transcriptUrl": "https://cdn.cs50.net/python/2022/x/lectures/6/lang/en/lecture6.txt"
+}

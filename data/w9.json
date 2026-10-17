@@ -1,1 +1,258 @@
-{"week": 9, "title": "Et cetera y proyecto final", "time": "lectura 30 min · proyecto 2–3 semanas", "topics": ["set", "global · constantes", "type hints · docstrings", "argparse", "*args · **kwargs", "map · filter · comprehensions", "enumerate", "yield"], "notesUrl": "https://cs50.harvard.edu/python/notes/9/", "videoUrl": "https://cs50.harvard.edu/python/weeks/9/", "summary": ["`set` guarda valores **únicos**: `set(lista)` quita duplicados; se agrega con `.add()`. No mantiene orden (`sorted(...)`).", "Variable global: se lee en cualquier lado, pero para modificarla dentro de una función necesitas `global` (si no, `UnboundLocalError`). Mejor usa una clase.", "Constantes por convención en MAYÚSCULAS: `MEOWS = 3`. Python no las protege; también pueden ser atributos de clase (`Cat.MEOWS`).", "Type hints: `def meow(n: int) -> None:`. Python no los obliga, pero `mypy` los revisa.", "Docstrings: `\"\"\"Explica la función\"\"\"` bajo el `def`, con `:param:`, `:return:`, etc.; Sphinx genera docs con ellas.", "`argparse` (`ArgumentParser`, `add_argument`, `parse_args`) reemplaza revisar `sys.argv` a mano, con `help`, `default` y `type`.", "Desempaquetado: `*lista` pasa elementos sueltos y `**dict` como argumentos nombrados. `*args` los recibe como tupla; `**kwargs`, como dict.", "Funcional: `map(str.upper, words)`, `filter(fn, lista)` (con `lambda`), comprensiones de lista `[x for x in xs if ...]` y de dict `{k: v for ...}`.", "`enumerate(lista)` da índice y valor. `yield` crea un generador: produce valores de a uno sin guardar la lista entera."], "jsToPy": [{"js": "new Set(arr)", "py": "set(lista)", "note": "Sin duplicados"}, {"js": "arr.map(x => x*2)", "py": "[x * 2 for x in lista]", "note": "O `map(fn, lista)`"}, {"js": "arr.filter(x => x>0)", "py": "[x for x in lista if x > 0]", "note": "O `filter(lambda x: x > 0, lista)`"}, {"js": "(...args) =>", "py": "def f(*args):", "note": "`args` llega como tupla"}, {"js": "f(...arr)", "py": "f(*lista)", "note": "Desempaquetar al llamar"}, {"js": "arr.forEach((x, i) =>", "py": "for i, x in enumerate(lista):", "note": ""}, {"js": "function* gen()", "py": "def gen(): ... yield", "note": "Generador"}], "examples": [{"label": "Comprensión, filter y enumerate:", "code": "students = [\"Hermione\", \"Harry\", \"Ron\"]\n\ngryffindors = [s for s in students if s != \"Ron\"]\nupper = list(map(str.upper, students))\n\nfor i, student in enumerate(students):\n    print(i + 1, student)"}, {"label": "*args y **kwargs:", "code": "def f(*args, **kwargs):\n    print(\"Positional:\", args)\n    print(\"Named:\", kwargs)\n\n\nf(100, 50, 25, galleons=100, sickles=50)"}, {"label": "Generador con yield (sheep):", "code": "def main():\n    n = int(input(\"What's n? \"))\n    for s in sheep(n):\n        print(s)\n\n\ndef sheep(n):\n    for i in range(n):\n        yield \"🐑\" * i\n\n\nif __name__ == \"__main__\":\n    main()"}, {"label": "argparse:", "code": "import argparse\n\nparser = argparse.ArgumentParser(description=\"Meow like a cat\")\nparser.add_argument(\"-n\", default=1, help=\"number of times to meow\", type=int)\nargs = parser.parse_args()\n\nfor _ in range(args.n):\n    print(\"meow\")"}], "traps": ["Modificar una global dentro de una función sin `global` da `UnboundLocalError`.", "`set` no mantiene orden: usa `sorted(set(lista))` si lo necesitas ordenado.", "Los type hints no se validan al ejecutar: solo `mypy` los chequea.", "Una comprensión muy larga se lee peor que un `for`. Úsala cuando quepa en una línea.", "Un generador se consume una sola vez; `map` y `filter` también devuelven iteradores."], "quiz": [{"q": "¿Qué devuelve `len(set([1, 1, 2]))`?", "options": ["3", "2", "1", "Error"], "answer": 1, "why": "El set quita el 1 repetido."}, {"q": "¿Equivalente de `arr.map(x => x * 2)`?", "options": ["map x*2", "[x * 2 for x in arr]", "arr.map()", "for x: x*2"], "answer": 1, "why": "Es una list comprehension (o `map` con una función)."}, {"q": "¿Qué recibe `**kwargs`?", "options": ["Una lista", "Una tupla", "Un dict de argumentos nombrados", "Un set"], "answer": 2, "why": "`*args` llega como tupla; `**kwargs`, como dict."}, {"q": "¿Qué hace `yield`?", "options": ["Termina la función", "Produce un valor y pausa", "Imprime", "Lanza error"], "answer": 1, "why": "La función se vuelve un generador que entrega valores de a uno."}, {"q": "¿Qué herramienta revisa los type hints?", "options": ["pytest", "mypy", "argparse", "Sphinx"], "answer": 1, "why": "Python no los obliga al ejecutar; `mypy` los chequea."}], "submit": "El proyecto final se entrega con `project.py` (con `main` y al menos 3 funciones más), `test_project.py`, `requirements.txt` y un `README.md`. También pide un video corto que empiece con una pantalla de título. Envía con `submit50 cs50/problems/2022/python/project`. Plazo: **31 dic 2026**.", "pset": [{"name": "Final Project", "url": "https://cs50.harvard.edu/python/project/", "task": "Proyecto propio en Python: `project.py` con `main` y 3+ funciones propias al nivel superior, `test_project.py` con pytest, `requirements.txt`, `README.md` y video demo.", "hints": ["`project.py` con `main` y al menos tres funciones propias definidas al nivel superior (no dentro de clases ni de otras funciones), más el guard `if __name__ == \"__main__\":`.", "`test_project.py` con pytest para al menos tres de esas funciones, cada test llamado `test_` + nombre de la función; además `requirements.txt` con una dependencia por línea.", "`README.md` con título, URL del video y descripción (qué es, qué hace cada archivo y por qué tomaste decisiones; unas 500 palabras es lo típico). Video de máximo 3 minutos, con pantalla de título, subido como no listado o público."]}], "practice": [{"name": "Comercios únicos", "prompt": "Escribe `unique_sorted(comercios)` que devuelva los comercios sin repetir y ordenados alfabéticamente.", "starter": "def unique_sorted(comercios):\n    ...\n", "tests": [{"code": "print(unique_sorted([\"Uber\", \"Tambo\", \"Uber\", \"Starbucks\"]))", "expect": "['Starbucks', 'Tambo', 'Uber']"}]}, {"name": "Comprensión", "prompt": "Escribe `squares_even(n)` que devuelva, en una sola línea, los cuadrados de los números pares menores que n.", "starter": "def squares_even(n):\n    ...\n", "tests": [{"code": "print(squares_even(7))", "expect": "[0, 4, 16, 36]"}, {"code": "print(squares_even(1))", "expect": "[0]"}]}, {"name": "Generador de cuotas", "prompt": "Escribe el generador `cuotas(total, n)` que produzca `Cuota 1: 33.33`, `Cuota 2: 33.33`, etc.", "starter": "def cuotas(total, n):\n    ...\n", "tests": [{"code": "for c in cuotas(100, 3):\n    print(c)", "expect": "Cuota 1: 33.33\nCuota 2: 33.33\nCuota 3: 33.33"}, {"code": "print(len(list(cuotas(50, 5))))", "expect": "5"}]}], "project": {"goal": "Cierra tu finanzas tracker como **proyecto final de CS50P**.", "steps": ["Junta todo en `project.py`: leer el .xls/CSV, categorizar, resumir y exportar.", "Escribe `test_project.py` para las funciones clave.", "README + video corto. Luego, fuera del curso, le conectas la API de Claude para categorizar con IA."]}, "sources": ["https://cs50.harvard.edu/python/notes/9/", "https://cs50.harvard.edu/python/project/"]}
+{
+ "week": 9,
+ "title": "Et cetera y proyecto final",
+ "time": "lectura 30 min · proyecto 2–3 semanas",
+ "topics": [
+  "set",
+  "global · constantes",
+  "type hints · docstrings",
+  "argparse",
+  "*args · **kwargs",
+  "map · filter · comprehensions",
+  "enumerate",
+  "yield"
+ ],
+ "notesUrl": "https://cs50.harvard.edu/python/notes/9/",
+ "videoUrl": "https://cs50.harvard.edu/python/weeks/9/",
+ "summary": [
+  "`set` (`houses.py`): primero David arma una lista y hace `append` solo `if house not in houses`; luego lo cambia por `houses = set()` + `houses.add(...)`, que descarta duplicados solo, y al final imprime `sorted(houses)`.",
+  "Variables globales (`bank.py`): leer `balance` desde una función funciona, pero `balance += n` da `UnboundLocalError`. Se arregla con `global balance`, aunque David prefiere una clase `Account` con `self._balance` y `@property balance`.",
+  "Constantes (`meows.py`): `MEOWS = 3` en MAYÚSCULAS es solo convención, Python no impide cambiarla. También pueden ser variables de clase (`Cat.MEOWS`).",
+  "Type hints: `def meow(n: int) -> None:` y `n: int = int(input(...))`. Python **no** los revisa al ejecutar; `mypy` sí. Atrapa tanto `meow(input(...))` (str en vez de int) como un `-> str` que en realidad devuelve `None`. De ahí sale `return \"meow\\n\" * n` + `print(meows, end=\"\")`.",
+  "Docstrings: `\"\"\"Meow n times.\"\"\"` debajo del `def`, con `:param n:`, `:type n: int`, `:raise TypeError:`, `:return:` y `:rtype: str`. Herramientas como Sphinx generan documentación a partir de ellas.",
+  "De `sys.argv` a `argparse`: `ArgumentParser(description=...)`, `add_argument(\"-n\", default=1, help=..., type=int)` y `parse_args()`. Te da `-h` gratis y errores automáticos, por ejemplo con `-n dog`.",
+  "Desempaquetado (`unpack.py`): `first, _ = input(...).split(\" \")`; `total(*coins)` con una lista y `total(**coins)` con un dict (galleons/sickles/knuts). Del lado que recibe, `def f(*args, **kwargs)` toma una tupla y un dict; `print` funciona así.",
+  "Estilo funcional: `map(str.upper, words)` en `yell.py` (pasando la función sin llamarla), list comprehensions con `if` en `gryffindors.py`, `filter(lambda s: ..., students)`, dict comprehensions (`{student: \"Gryffindor\" for student in students}`) y `enumerate` en vez de `range(len(...))`.",
+  "Generadores (`sleep.py`): armar toda la lista de ovejas con un `n` enorme cuelga el programa. Con `yield` la función entrega **un valor a la vez**. Para cerrar, `say.py` combina `cowsay` y `pyttsx3`: \"This was CS50\"."
+ ],
+ "jsToPy": [
+  {
+   "js": "new Set(arr)",
+   "py": "set(lista)",
+   "note": "`.add()` para agregar; quita duplicados solo"
+  },
+  {
+   "js": "let x (fuera de la función)",
+   "py": "global x",
+   "note": "Necesario para **asignar** una global dentro de una función"
+  },
+  {
+   "js": "const MEOWS = 3",
+   "py": "MEOWS = 3",
+   "note": "Solo convención: Python no la protege"
+  },
+  {
+   "js": "function f(n: number): string (TS)",
+   "py": "def f(n: int) -> str:",
+   "note": "Como TS, pero lo revisa `mypy`, no Python"
+  },
+  {
+   "js": "/** JSDoc */",
+   "py": "\"\"\"docstring\"\"\"",
+   "note": "Va dentro del `def`"
+  },
+  {
+   "js": "f(...arr)",
+   "py": "f(*lista)",
+   "note": "Desempaquetar al llamar"
+  },
+  {
+   "js": "f({...obj}) con params nombrados",
+   "py": "f(**dict)",
+   "note": "Las claves deben coincidir con los parámetros"
+  },
+  {
+   "js": "(...args) =>",
+   "py": "def f(*args, **kwargs):",
+   "note": "`args` es tupla, `kwargs` es dict"
+  },
+  {
+   "js": "arr.map(s => s.toUpperCase())",
+   "py": "map(str.upper, words)",
+   "note": "O `[w.upper() for w in words]`"
+  },
+  {
+   "js": "arr.filter(s => s.house === \"G\")",
+   "py": "filter(lambda s: s[\"house\"] == \"G\", students)",
+   "note": "O una comprehension con `if`"
+  },
+  {
+   "js": "arr.forEach((x, i) => ...)",
+   "py": "for i, x in enumerate(lista):",
+   "note": "En vez de `range(len(...))`"
+  },
+  {
+   "js": "function* gen() { yield x }",
+   "py": "def gen(): yield x",
+   "note": "Generador"
+  }
+ ],
+ "examples": [
+  {
+   "label": "meows.py — docstring con :param:, :type:, :raise:, :return: y :rtype:",
+   "code": "def meow(n):\n    \"\"\"\n    Meow n times.\n\n    :param n: Number of times to meow\n    :type n: int\n    :raise TypeError: If n is not an int\n    :return: A string of n meows, one per line\n    :rtype: str\n    \"\"\"\n    return \"meow\\n\" * n\n\n\nnumber = int(input(\"Number: \"))\nmeows = meow(number)\nprint(meows, end=\"\")"
+  },
+  {
+   "label": "meows.py — versión con argparse:",
+   "code": "import argparse\n\nparser = argparse.ArgumentParser(description=\"Meow like a cat\")\nparser.add_argument(\"-n\", default=1, help=\"number of times to meow\", type=int)\nargs = parser.parse_args()\n\nfor _ in range(args.n):\n    print(\"meow\")"
+  },
+  {
+   "label": "gryffindors.py — list comprehension con if:",
+   "code": "students = [\n    {\"name\": \"Hermione\", \"house\": \"Gryffindor\"},\n    {\"name\": \"Harry\", \"house\": \"Gryffindor\"},\n    {\"name\": \"Ron\", \"house\": \"Gryffindor\"},\n    {\"name\": \"Draco\", \"house\": \"Slytherin\"},\n]\n\ngryffindors = [\n    student[\"name\"] for student in students if student[\"house\"] == \"Gryffindor\"\n]\n\nfor gryffindor in sorted(gryffindors):\n    print(gryffindor)"
+  },
+  {
+   "label": "sleep.py — generador con yield:",
+   "code": "def main():\n    n = int(input(\"What's n? \"))\n    for s in sheep(n):\n        print(s)\n\n\ndef sheep(n):\n    for i in range(n):\n        yield \"🐑\" * i\n\n\nif __name__ == \"__main__\":\n    main()"
+  }
+ ],
+ "traps": [
+  "Modificar una global dentro de una función (`balance += n`) sin `global balance` da `UnboundLocalError`.",
+  "Pasar `balance` como argumento no lo arregla: la función cambia solo su copia local.",
+  "`meow(input(\"Number: \"))` le pasa un `str` a `range`: Python truena al ejecutar y `mypy` lo detecta antes si pusiste `n: int`.",
+  "Declarar `-> str` y no hacer `return` devuelve `None`: `mypy` lo marca.",
+  "Las constantes en MAYÚSCULAS no están protegidas: nada impide reasignarlas.",
+  "`total(**coins)` con una clave inesperada (p. ej. `pennies`) da `TypeError`, igual que pasar más o menos valores de los que la función espera.",
+  "`print(uppercased)` con una lista muestra corchetes y comillas: David usa `print(*uppercased)` para desempaquetar.",
+  "Construir toda la lista de ovejas con un `n` gigante cuelga el programa: para eso está `yield`."
+ ],
+ "quiz": [
+  {
+   "q": "En `bank.py`, ¿qué pasa si `deposit(n)` hace `balance += n` sobre una global sin declarar `global balance`?",
+   "options": [
+    "`UnboundLocalError`",
+    "Funciona",
+    "`NameError`",
+    "Crea otra global"
+   ],
+   "answer": 0,
+   "why": "Al asignar, Python trata `balance` como local, y todavía no tiene valor. Con `global balance` se arregla (o mejor, con una clase)."
+  },
+  {
+   "q": "¿Quién detecta que llamas `meow(\"3\")` si definiste `def meow(n: int)`?",
+   "options": [
+    "Python, al importar",
+    "`argparse`",
+    "`mypy`, antes de ejecutar",
+    "Nadie, ni siquiera `mypy`"
+   ],
+   "answer": 2,
+   "why": "Los type hints no se revisan al ejecutar; `mypy` sí los chequea."
+  },
+  {
+   "q": "Con `coins = {\"galleons\": 100, \"sickles\": 50, \"knuts\": 25}`, ¿qué hace `total(**coins)`?",
+   "options": [
+    "Pasa el dict como un solo argumento",
+    "Pasa cada clave como argumento nombrado",
+    "Pasa solo los valores en orden",
+    "Da error"
+   ],
+   "answer": 1,
+   "why": "`**` desempaqueta el dict en `galleons=100, sickles=50, knuts=25`."
+  },
+  {
+   "q": "En `yell.py`, ¿por qué se escribe `map(str.upper, words)` y no `map(str.upper(), words)`?",
+   "options": [
+    "Por estilo",
+    "Porque `upper` no existe",
+    "Porque `map` necesita una lista",
+    "Porque se pasa la función, no el resultado de llamarla"
+   ],
+   "answer": 3,
+   "why": "`map` recibe la función y la aplica a cada palabra."
+  },
+  {
+   "q": "¿Por qué David cambia `sheep(n)` para usar `yield`?",
+   "options": [
+    "Para ordenar las ovejas",
+    "Para usar type hints",
+    "Para que con un `n` enorme no arme toda la lista en memoria y entregue una a la vez",
+    "Porque `return` no funciona en loops"
+   ],
+   "answer": 2,
+   "why": "Con un millón la versión con lista se cuelga; el generador produce un valor por iteración."
+  }
+ ],
+ "submit": "El proyecto final se entrega con `project.py` (con `main` y al menos 3 funciones más), `test_project.py`, `requirements.txt` y un `README.md`. También pide un video corto que empiece con una pantalla de título. Envía con `submit50 cs50/problems/2022/python/project`. Plazo: **31 dic 2026**.",
+ "pset": [
+  {
+   "name": "Final Project",
+   "url": "https://cs50.harvard.edu/python/project/",
+   "task": "Proyecto propio en Python: `project.py` con `main` y 3+ funciones propias al nivel superior, `test_project.py` con pytest, `requirements.txt`, `README.md` y video demo.",
+   "hints": [
+    "`project.py` con `main` y al menos tres funciones propias definidas al nivel superior (no dentro de clases ni de otras funciones), más el guard `if __name__ == \"__main__\":`.",
+    "`test_project.py` con pytest para al menos tres de esas funciones, cada test llamado `test_` + nombre de la función; además `requirements.txt` con una dependencia por línea.",
+    "`README.md` con título, URL del video y descripción (qué es, qué hace cada archivo y por qué tomaste decisiones; unas 500 palabras es lo típico). Video de máximo 3 minutos, con pantalla de título, subido como no listado o público."
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "name": "Comercios únicos",
+   "prompt": "Escribe `unique_sorted(comercios)` que devuelva los comercios sin repetir y ordenados alfabéticamente.",
+   "starter": "def unique_sorted(comercios):\n    ...\n",
+   "tests": [
+    {
+     "code": "print(unique_sorted([\"Uber\", \"Tambo\", \"Uber\", \"Starbucks\"]))",
+     "expect": "['Starbucks', 'Tambo', 'Uber']"
+    }
+   ]
+  },
+  {
+   "name": "Comprensión",
+   "prompt": "Escribe `squares_even(n)` que devuelva, en una sola línea, los cuadrados de los números pares menores que n.",
+   "starter": "def squares_even(n):\n    ...\n",
+   "tests": [
+    {
+     "code": "print(squares_even(7))",
+     "expect": "[0, 4, 16, 36]"
+    },
+    {
+     "code": "print(squares_even(1))",
+     "expect": "[0]"
+    }
+   ]
+  },
+  {
+   "name": "Generador de cuotas",
+   "prompt": "Escribe el generador `cuotas(total, n)` que produzca `Cuota 1: 33.33`, `Cuota 2: 33.33`, etc.",
+   "starter": "def cuotas(total, n):\n    ...\n",
+   "tests": [
+    {
+     "code": "for c in cuotas(100, 3):\n    print(c)",
+     "expect": "Cuota 1: 33.33\nCuota 2: 33.33\nCuota 3: 33.33"
+    },
+    {
+     "code": "print(len(list(cuotas(50, 5))))",
+     "expect": "5"
+    }
+   ]
+  }
+ ],
+ "project": {
+  "goal": "Cierra tu finanzas tracker como **proyecto final de CS50P**.",
+  "steps": [
+   "Junta todo en `project.py`: leer el .xls/CSV, categorizar, resumir y exportar.",
+   "Escribe `test_project.py` para las funciones clave.",
+   "README + video corto. Luego, fuera del curso, le conectas la API de Claude para categorizar con IA."
+  ]
+ },
+ "sources": [
+  "https://cs50.harvard.edu/python/notes/9/",
+  "https://cs50.harvard.edu/python/project/",
+  "https://cdn.cs50.net/python/2022/x/lectures/9/lang/en/lecture9.txt"
+ ],
+ "tips": [
+  "Evita las variables globales siempre que puedas: una clase (`Account`) encapsula mejor el estado.",
+  "Convierte los \"números mágicos\" en constantes con nombre, en MAYÚSCULAS y arriba del archivo.",
+  "Prefiere funciones que **devuelven** valores en vez de imprimir (efectos secundarios): son más fáciles de testear (`meow` → `return \"meow\\n\" * n`).",
+  "Usa `argparse` en vez de parsear `sys.argv` a mano, y `enumerate` en vez de `range(len(...))`."
+ ],
+ "shorts": [
+  {
+   "title": "List and Dictionary Comprehensions",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  }
+ ],
+ "transcriptUrl": "https://cdn.cs50.net/python/2022/x/lectures/9/lang/en/lecture9.txt"
+}

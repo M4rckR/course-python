@@ -6,6 +6,12 @@ let done=store.get("cs50p-done",{}); let answers=store.get("cs50p-quiz",{}); let
 // Estado nuevo del rediseño (tema, última posición, días de estudio, secciones marcadas…). Las 4 claves de arriba no cambian.
 let prefs=store.get("cs50p:v1",{});
 if(typeof prefs!=="object"||!prefs)prefs={};
+// v2 (8 secciones, Shorts como 04): corre last.section ≥ 4 y focus.step ≥ 3 una sola vez
+if((prefs.v||1)<2){
+  if(prefs.last?.section>=4)prefs.last.section++;
+  if(prefs.focus?.step>=3)prefs.focus.step++;
+  prefs.v=2;
+}
 const savePrefs=()=>store.set("cs50p:v1",prefs);
 if(!prefs.startedAt){const d=new Date();prefs.startedAt=[...(prefs.studyDays||[])].sort()[0]||`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;savePrefs()}
 const el=(t,a={},...c)=>{const n=document.createElement(t);for(const[k,v]of Object.entries(a)){if(v==null||v===false)continue;if(k==="class")n.className=v;else if(k==="html")n.innerHTML=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else n.setAttribute(k,v)}for(const x of c.flat()){if(x==null||x===false)continue;n.append(x.nodeType?x:document.createTextNode(x))}return n};
@@ -23,11 +29,13 @@ const md=s=>{
 const pad2=n=>String(n).padStart(2,"0");
 const snake=s=>String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
 
-// ── Secciones de una semana (01–07) y cuándo cuentan como hechas
+// ── Secciones de una semana (01–08; sin shorts, 01–07) y cuándo cuentan como hechas.
+// La numeración visible sale de visibleSections(); internamente (last.section) se usa el índice en SECTIONS.
 const SECTIONS=[
   {key:"summary",title:"En corto",short:"En corto",has:w=>w.summary?.length},
   {key:"jsToPy",title:"De JavaScript a Python",short:"De JS a Python",has:w=>w.jsToPy?.length},
   {key:"examples",title:"Código clave y trampas",short:"Código y trampas",has:w=>w.examples?.length||w.traps?.length},
+  {key:"shorts",title:"Shorts",short:"Shorts",has:w=>w.shorts?.length},
   {key:"quiz",title:"Quiz",short:"Quiz",has:w=>w.quiz?.length},
   {key:"practice",title:"Practica aquí",short:"Práctica",has:w=>w.practice?.length},
   {key:"pset",title:"Problem set",short:"Problem set",has:w=>w.pset?.length},
@@ -40,11 +48,21 @@ function sectionDone(i,key){
   if(key==="quiz")return w.quiz.every((_,q)=>(answers[i]||{})[q]!=null);
   if(key==="practice")return w.practice.every((_,j)=>passed[`${i}-${j}`]);
   if(key==="pset")return w.pset.every((_,j)=>done[`${i}-${j}`]);
+  if(key==="shorts"){
+    // Los confirmados deben estar vistos; los no confirmados no bloquean. Si ninguno está confirmado:
+    // hecha al marcar uno o con "Marcar como hecho".
+    const seen=prefs.weeks?.[i]?.shorts||{},conf=w.shorts.map((x,j)=>x.confirmed?j:-1).filter(j=>j>=0);
+    return conf.length?conf.every(j=>seen[j]):w.shorts.some((_,j)=>seen[j])||!!prefs.weeks?.[i]?.done?.shorts;
+  }
   return !!prefs.weeks?.[i]?.done?.[key];
 }
-const sectionsDone=i=>SECTIONS.filter(s=>sectionDone(i,s.key)).length;
-// empty = sin JSON · loaded = 0 hechas · progress = ≥1 · complete = 7/7
-function weekStatus(i){if(!weeks[i])return"empty";const n=sectionsDone(i);return n===7?"complete":n?"progress":"loaded"}
+const visibleSections=i=>SECTIONS.filter(s=>!weeks[i]||s.has(weeks[i]));
+const sectionTotal=i=>visibleSections(i).length;
+const secNum=(i,key)=>pad2(visibleSections(i).findIndex(s=>s.key===key)+1);
+const shortsSeen=i=>{const seen=prefs.weeks?.[i]?.shorts||{};return(weeks[i]?.shorts||[]).filter((_,j)=>seen[j]).length};
+const sectionsDone=i=>visibleSections(i).filter(s=>sectionDone(i,s.key)).length;
+// empty = sin JSON · loaded = 0 hechas · progress = ≥1 · complete = todas las visibles
+function weekStatus(i){if(!weeks[i])return"empty";const n=sectionsDone(i);return n===sectionTotal(i)?"complete":n?"progress":"loaded"}
 const STATUS_TEXT={empty:"Sin cargar",loaded:"Cargada",progress:"En curso",complete:"Completa"};
 function globalProgress(){
   let total=0,ok=0;for(const[i,w]of Object.entries(weeks)){(w.pset||[]).forEach((_,j)=>{total++;if(done[`${i}-${j}`])ok++});(w.practice||[]).forEach((_,j)=>{total++;if(passed[`${i}-${j}`])ok++})}
@@ -55,7 +73,7 @@ const dayKey=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}
 function markStudied(){
   const t=dayKey(new Date());prefs.studyDays=(prefs.studyDays||[]).filter(d=>d!==t).concat(t).slice(-120);savePrefs();
 }
-// Última posición: semana, sección (1–7) e ítem dentro de la sección
+// Última posición: semana, sección (índice 1–8 en SECTIONS) e ítem dentro de la sección
 function setLast(week,section,item=0){prefs.last={week,section,item};savePrefs()}
 
 // ── Router: #/ = Inicio, #/w/N = semana. El formato antiguo #wN redirige.
@@ -114,6 +132,7 @@ function sectionCount(key){
     case "summary":return`${w.summary.length} puntos`;
     case "jsToPy":return`${w.jsToPy.length} equivalencias`;
     case "examples":return[w.examples?.length&&`${w.examples.length} ejemplos`,w.traps?.length&&`${w.traps.length} trampas`].filter(Boolean).join(", ");
+    case "shorts":return sectionDone(i,"shorts")?`${shortsSeen(i)} vistos`:`${shortsSeen(i)}/${w.shorts.length} vistos`;
     case "quiz":{const a=answers[i]||{};const n=w.quiz.filter((_,q)=>a[q]!=null).length;const ok=w.quiz.filter((q,k)=>a[k]===q.answer).length;return sectionDone(i,"quiz")?`${ok} de ${w.quiz.length} correctas`:`${n}/${w.quiz.length}`}
     case "practice":{const n=w.practice.filter((_,j)=>passed[`${i}-${j}`]).length;return`${n} de ${w.practice.length} aprobados`}
     case "pset":{const n=w.pset.filter((_,j)=>done[`${i}-${j}`]).length;return`${n}/${w.pset.length} resueltos`}
@@ -124,6 +143,7 @@ function sectionCount(key){
 function indexCount(key){
   const w=weeks[current],i=current;
   if(key==="quiz")return`${w.quiz.filter((_,q)=>(answers[i]||{})[q]!=null).length}/${w.quiz.length}`;
+  if(key==="shorts")return`${shortsSeen(i)}/${w.shorts.length}`;
   if(key==="practice")return`${w.practice.filter((_,j)=>passed[`${i}-${j}`]).length}/${w.practice.length}`;
   if(key==="pset")return`${w.pset.filter((_,j)=>done[`${i}-${j}`]).length}/${w.pset.length}`;
   return null;
@@ -141,8 +161,8 @@ function scrollToSection(key){
 function buildIndex(){
   const n=sectionsDone(current);const cur=currentInView;
   return el("aside",{class:"section-index",id:"sectionIndex","aria-label":"Secciones de la semana"},
-    el("div",{class:"week-progress"},el("p",{class:"week-progress__label"},`W${current} · AVANCE`),segs(weekSegStates(current,sectionIdx(cur)+1)),el("p",{class:"week-progress__count"},`${n} de 7 secciones`)),
-    el("nav",{"aria-label":"Secciones"},el("ol",{class:"section-index__list"},SECTIONS.map((s,k)=>{
+    el("div",{class:"week-progress"},el("p",{class:"week-progress__label"},`W${current} · AVANCE`),segs(weekSegStates(current,sectionIdx(cur)+1)),el("p",{class:"week-progress__count"},`${n} de ${sectionTotal(current)} secciones`)),
+    el("nav",{"aria-label":"Secciones"},el("ol",{class:"section-index__list"},visibleSections(current).map((s,k)=>{
       const d=sectionDone(current,s.key),c=s.key===cur,count=d?null:indexCount(s.key);
       return el("li",{},el("a",{class:"section-index__item",href:"#s-"+s.key,"data-state":d?"done":"pending","aria-current":c?"true":null,onclick:e=>{e.preventDefault();scrollToSection(s.key)}},
         d?el("span",{class:"section-index__mark","aria-hidden":"true"},"✓"):el("span",{class:"section-index__dot","aria-hidden":"true"}),
@@ -154,7 +174,7 @@ function buildIndex(){
 }
 function buildBar(){
   const cur=currentInView;
-  return el("nav",{class:"section-bar",id:"sectionBar","aria-label":"Secciones de la semana"},SECTIONS.map((s,k)=>{
+  return el("nav",{class:"section-bar",id:"sectionBar","aria-label":"Secciones de la semana"},visibleSections(current).map((s,k)=>{
     const d=sectionDone(current,s.key),c=s.key===cur;
     return el("a",{class:"section-chip",href:"#s-"+s.key,"data-state":c?"current":d?"done":"pending","aria-current":c?"true":null,onclick:e=>{e.preventDefault();scrollToSection(s.key)}},
       d&&!c?"✓":null,pad2(k+1),c?" "+s.short:null,d?el("span",{class:"visually-hidden"},", hecha"):null,!c?el("span",{class:"visually-hidden"}," "+s.short):null);
@@ -206,13 +226,15 @@ function sectionBody(key){
     case "examples":return[
       ...(w.examples||[]).map(e=>el("div",{class:"example"},e.label?el("p",{class:"example__label",html:md(e.label)}):null,codeBlock(e.code))),
       w.traps?.length?el("ul",{class:"traps"},w.traps.map(t=>el("li",{},el("span",{class:"traps__label"},"Trampa"),el("span",{html:md(t)})))):null];
+    case "shorts":return[el("ul",{class:"shorts"},w.shorts.map((x,j)=>shortItem(x,j)))];
     case "quiz":return[el("div",{class:"quiz"},w.quiz.map((q,qi)=>quizQuestion(q,qi)))];
     case "pset":return[w.submit?el("p",{class:"pset__submit",html:md(w.submit)}):null,el("div",{class:"pset"},w.pset.map((p,j)=>psetItem(p,j)))];
     case "project":return[el("p",{class:"project__goal",html:md(w.project.goal||"")}),w.project.steps?.length?el("ol",{class:"section-list"},w.project.steps.map(x=>el("li",{html:md(x)}))):null];
   }
 }
-// "Marcar como hecho" solo en 01, 02, 03 y 07
+// "Marcar como hecho" en En corto, JS→Python, Código y Proyecto; en Shorts solo si ningún short está confirmado
 const MANUAL=new Set(["summary","jsToPy","examples","project"]);
+const isManual=key=>MANUAL.has(key)||(key==="shorts"&&!weeks[current]?.shorts?.some(x=>x.confirmed));
 function markSectionDone(key){
   const wp=weekPrefs(current);wp.done??={};wp.done[key]=true;openSections.delete(key);
   markStudied();setLast(current,sectionIdx(key)+1,0);
@@ -222,7 +244,7 @@ function markSectionDone(key){
 const plainText=s=>String(s).replace(/[`*]/g,"");
 
 function buildSection(key){
-  const w=weeks[current],k=sectionIdx(key),n=pad2(k+1),d=sectionDone(current,key);
+  const w=weeks[current],k=sectionIdx(key),n=secNum(current,key),d=sectionDone(current,key);
   if(key==="practice")return buildPractice();
   const cur=firstOpenSection(current)===k+1;
   const folded=(d&&!openSections.has(key))||(key==="project"&&!d&&!cur&&!openSections.has(key));
@@ -243,7 +265,7 @@ function buildSection(key){
       el("button",{class:"section-row",type:"button","aria-expanded":"false","aria-controls":`s-${key}-body`,onclick:open},
         el("span",{class:"num"},n),el("span",{class:"section-row__title"},sectionTitle(key),el("span",{class:"section-row__sub"},sub)),right));
   }
-  const counter=key==="quiz"||key==="pset"?el("span",{class:"section-card__count"},sectionCount(key)):null;
+  const counter=key==="quiz"||key==="pset"||key==="shorts"?el("span",{class:"section-card__count"},sectionCount(key)):null;
   const head=cur&&!d
     ?[el("div",{class:"section-card__label"},el("span",{},`${n} · Ahora`),counter),el("h2",{class:"section-card__title",id:`s-${key}-title`,tabindex:"-1"},sectionTitle(key))]
     :[el("div",{class:"section-card__head"},el("div",{class:"section-card__name"},el("span",{class:"num"},n),el("h2",{class:"section-card__title",id:`s-${key}-title`,tabindex:"-1"},sectionTitle(key))),
@@ -251,7 +273,7 @@ function buildSection(key){
   return el("section",{class:"section-card",id:"s-"+key,"data-state":cur&&!d?"current":d?"done":"pending","aria-labelledby":`s-${key}-title`},
     ...head,
     el("div",{class:"section-card__body",id:`s-${key}-body`},...sectionBody(key)),
-    MANUAL.has(key)&&!d?el("button",{class:"btn--small section-card__mark",type:"button",onclick:()=>markSectionDone(key)},"Marcar como hecho"):null);
+    isManual(key)&&!d?el("button",{class:"btn--small section-card__mark",type:"button",onclick:()=>markSectionDone(key)},"Marcar como hecho"):null);
 }
 // Reconstruye las secciones (menos la práctica, para no perder el editor) tras un cambio de estado
 function refreshSections({fade,practice=false}={}){
@@ -271,20 +293,37 @@ function refreshSections({fade,practice=false}={}){
 function paceText(){
   const now=new Date(),end=new Date(now.getFullYear(),11,31,23,59),start=new Date((prefs.startedAt||dayKey(now))+"T00:00");
   const total=Math.max(1,(end-start)/86400000),perWeek=total/10;
-  const expected=Math.min(10,10*((now-start)/86400000)/total),actual=[...Array(10).keys()].reduce((a,i)=>a+sectionsDone(i)/7,0);
+  const expected=Math.min(10,10*((now-start)/86400000)/total),actual=[...Array(10).keys()].reduce((a,i)=>a+sectionsDone(i)/sectionTotal(i),0);
   const d=Math.round((actual-expected)*perWeek),u=Math.abs(d)===1?"día":"días";
   return d>0?`Vas ${d} ${u} por delante del ritmo.`:d<0?`Vas ${-d} ${u} por detrás del ritmo.`:"Vas justo al ritmo.";
 }
 const bannerActive=i=>weekStatus(i)==="complete"&&!prefs.weeks?.[i]?.bannerDone;
 function weekBanner(i,{animate=false}={}){
   const next=i<9?i+1:null;
-  const sg=segs(Array(7).fill(animate&&!reducedMotion()?"pending":"done"),"segments week-complete__segs");
+  const sg=segs(Array(sectionTotal(i)).fill(animate&&!reducedMotion()?"pending":"done"),"segments week-complete__segs");
   if(animate&&!reducedMotion())requestAnimationFrame(()=>requestAnimationFrame(()=>[...sg.children].forEach((x,k)=>{x.style.transitionDelay=`${k*60}ms`;x.dataset.s="done"})));
   return el("section",{class:"week-complete","aria-label":`Semana ${i} completa`},
-    el("div",{class:"week-complete__head"},el("h2",{class:"week-complete__title"},`Semana ${i} completa`),el("span",{class:"week-complete__count"},"7/7")),
+    el("div",{class:"week-complete__head"},el("h2",{class:"week-complete__title"},`Semana ${i} completa`),el("span",{class:"week-complete__count"},`${sectionTotal(i)}/${sectionTotal(i)}`)),
     sg,
     el("div",{class:"week-complete__foot"},el("span",{class:"week-complete__pace"},paceText()),
       next!=null&&weeks[next]?el("a",{class:"week-complete__next",href:"#/w/"+next},`Abrir W${next} →`):el("a",{class:"week-complete__next",href:"#/"},"Ir a Inicio →")));
+}
+
+// Short con checkbox "visto" (§15). Se guarda en cs50p:v1 → weeks[w].shorts[j]
+function shortItem(x,j){
+  const wp=weekPrefs(current),id=`short-${current}-${j}`;
+  const cb=el("input",{type:"checkbox",class:"pset-check short__check",id});cb.checked=!!wp.shorts?.[j];
+  const li=el("li",{class:"short","data-seen":cb.checked?"true":null,"data-confirmed":x.confirmed?null:"false"});
+  cb.addEventListener("change",()=>{
+    wp.shorts??={};if(cb.checked)wp.shorts[j]=true;else delete wp.shorts[j];savePrefs();
+    markStudied();setLast(current,sectionIdx("shorts")+1,j);
+    li.toggleAttribute("data-seen",cb.checked);if(cb.checked)li.dataset.seen="true";
+    const c=li.closest(".section-card")?.querySelector(".section-card__count");if(c)c.textContent=sectionCount("shorts");
+    refreshChrome();
+  });
+  li.append(cb,el("label",{for:id,class:"visually-hidden"},`Visto: ${x.title}`),
+    el("a",{class:"short__title",href:x.url,target:"_blank",rel:"noopener"},x.title,el("span",{"aria-hidden":"true"}," ↗"),el("span",{class:"visually-hidden"}," (abre en otra pestaña)")));
+  return li;
 }
 
 // Pregunta de quiz (1g fila 3)
@@ -307,7 +346,7 @@ function quizQuestion(q,qi){
   const why=el("p",{class:"quiz-why","aria-live":"polite"});
   const opts=q.options.map((o,oi)=>el("button",{class:"quiz-opt",type:"button",onclick:()=>{
     answers[current]={...(answers[current]||{}),[qi]:oi};store.set("cs50p-quiz",answers);
-    markStudied();setLast(current,4,qi);paint();refreshChrome();
+    markStudied();setLast(current,sectionIdx("quiz")+1,qi);paint();refreshChrome();
     const c=fs.closest(".section-card")?.querySelector(".section-card__count");if(c)c.textContent=sectionCount("quiz");
   }},el("span",{class:"quiz-opt__key"},LETTERS[oi]),
     isCodeOption(o)?el("span",{class:"quiz-opt__text","data-code":"true"},wholeSpan(o)??o):el("span",{class:"quiz-opt__text",html:md(o)}),
@@ -332,7 +371,7 @@ function psetItem(p,j){
   const item=el("div",{class:"pset-item","data-done":done[key]?"true":null});
   const cb=el("input",{type:"checkbox",class:"pset-check",id:"p"+key,"aria-label":"Resuelto: "+p.name});cb.checked=!!done[key];
   cb.addEventListener("change",()=>{
-    done[key]=cb.checked;store.set("cs50p-done",done);markStudied();setLast(current,6,j);
+    done[key]=cb.checked;store.set("cs50p-done",done);markStudied();setLast(current,sectionIdx("pset")+1,j);
     item.toggleAttribute("data-done",cb.checked);if(cb.checked)item.dataset.done="true";
     const c=item.closest(".section-card")?.querySelector(".section-card__count");if(c)c.textContent=sectionCount("pset");
     refreshChrome();
@@ -362,11 +401,11 @@ function buildPractice(){
   if(d&&!openSections.has("practice")){
     return el("section",{class:"section-card",id:"s-practice","data-state":"done"},
       el("button",{class:"section-row",type:"button","aria-expanded":"false","aria-controls":"s-practice-body",onclick:()=>{openSections.add("practice");const node=buildPractice();document.getElementById("s-practice").replaceWith(node);node.querySelector("h2").focus();refreshChrome()}},
-        el("span",{class:"num"},"05"),el("span",{class:"section-row__title"},"Practica aquí",el("span",{class:"section-row__sub"},` · ${sectionCount("practice")}`)),
+        el("span",{class:"num"},secNum(current,"practice")),el("span",{class:"section-row__title"},"Practica aquí",el("span",{class:"section-row__sub"},` · ${sectionCount("practice")}`)),
         el("span",{class:"section-row__status","data-ok":"true"},"✓ Hecho · ",el("span",{class:"section-row__open"},"abrir"))));
   }
   if(practiceSel==null||practiceSel>=w.practice.length){
-    const l=prefs.last;practiceSel=l?.week===current&&l.section===5&&l.item<w.practice.length?l.item:Math.max(0,w.practice.findIndex((_,j)=>!passed[`${current}-${j}`]));
+    const l=prefs.last;practiceSel=l?.week===current&&l.section===sectionIdx("practice")+1&&l.item<w.practice.length?l.item:Math.max(0,w.practice.findIndex((_,j)=>!passed[`${current}-${j}`]));
   }
   const count=el("span",{class:"practice__count"});
   const paintCount=()=>{const n=w.practice.filter((_,j)=>passed[`${current}-${j}`]).length;count.innerHTML=`<span class="hide-mobile">${n} de ${w.practice.length} aprobados</span><span class="only-mobile">${n}/${w.practice.length}</span>`};
@@ -393,7 +432,7 @@ function buildPractice(){
   function onPass(){paintCount();paintTabs();refreshChrome()}
   paintTabs();panel.append(...practicePanel(w.practice[practiceSel],practiceSel,hooksFor(practiceSel)));
   return el("section",{id:"s-practice",class:"practice","aria-labelledby":"practice-title"},
-    el("header",{class:"practice__head"},el("div",{},el("p",{class:"label practice__label"},"05 · El centro de la semana"),el("h2",{id:"practice-title",tabindex:"-1"},"Practica aquí")),count),
+    el("header",{class:"practice__head"},el("div",{},el("p",{class:"label practice__label"},`${secNum(current,"practice")} · El centro de la semana`),el("h2",{id:"practice-title",tabindex:"-1"},"Practica aquí")),count),
     tabs,el("div",{id:"s-practice-body"},panel));
 }
 // ── Resaltado de Python (tokenizer regex, en este orden: comentario, string, número, keyword, builtin/llamada)
@@ -686,7 +725,7 @@ function practicePanel(p,j,hooks={}){
     const errAt=renderResults(res,{p,results,code,next:hooks.next});
     if(errAt)ed.markError(errAt.line-1,errAt.token);else ed.clearError();
     if(all){
-      passed[key]=true;store.set("cs50p-passed",passed);markStudied();setLast(current,5,j);hooks.onPass?.();
+      passed[key]=true;store.set("cs50p-passed",passed);markStudied();setLast(current,sectionIdx("practice")+1,j);hooks.onPass?.();
       if(!was){
         const n=w.practice.filter((_,k)=>passed[`${current}-${k}`]).length;
         showToast({title:"Ejercicio aprobado",sub:`${p.name} · ${n} de ${w.practice.length} en la semana`,action:hooks.next?{label:"Siguiente",go:hooks.next.go}:null});
@@ -769,7 +808,7 @@ async function runTest(code,t){
   const r=await runPy(src,t.stdin||[],t.code?1:0);
   return{...r,pass:!r.err&&r.out.trimEnd().endsWith(t.expect)};
 }
-// ── Modo foco (1c / 1f): un paso a la vez. 01–03, 06 y 07 = 1 paso; 04 = 1 por pregunta; 05 = 1 por ejercicio.
+// ── Modo foco (1c / 1f): un paso a la vez. Quiz = 1 paso por pregunta; Práctica = 1 por ejercicio; el resto (Shorts incluido) = 1 paso.
 let focusStep=0,focusSkipArmed=false;
 function focusSteps(){
   const w=weeks[current],steps=[];
@@ -821,20 +860,20 @@ function focusNext({mark=false}={}){
   if(st.key==="quiz"&&(answers[current]||{})[st.sub]==null&&!focusSkipArmed){
     focusSkipArmed=true;const n=document.querySelector(".focus__hint");if(n)n.hidden=false;return;
   }
-  if(mark&&MANUAL.has(st.key)&&!sectionDone(current,st.key)){const wp=weekPrefs(current);wp.done??={};wp.done[st.key]=true;markStudied();setLast(current,sectionIdx(st.key)+1,0)}
+  if(mark&&isManual(st.key)&&!sectionDone(current,st.key)){const wp=weekPrefs(current);wp.done??={};wp.done[st.key]=true;markStudied();setLast(current,sectionIdx(st.key)+1,0)}
   if(focusStep===steps.length-1){exitFocus();return}
   focusGo(focusStep+1);
 }
 function renderFocus({animate=false}={}){
-  const w=weeks[current],steps=focusSteps(),st=steps[focusStep],k=sectionIdx(st.key),s=SECTIONS[k];
+  const w=weeks[current],steps=focusSteps(),st=steps[focusStep],vis=visibleSections(current),k=vis.findIndex(x=>x.key===st.key),s=vis[k],total=pad2(vis.length);
   prefs.focus={week:current,step:focusStep};savePrefs();
-  const secState=SECTIONS.map((x,i)=>i===k?"current":sectionDone(current,x.key)?"done":"pending");
+  const secState=vis.map((x,i)=>i===k?"current":sectionDone(current,x.key)?"done":"pending");
   const subDone=j=>st.key==="quiz"?(answers[current]||{})[j]!=null:st.key==="practice"?!!passed[`${current}-${j}`]:sectionDone(current,st.key);
   const subTxt=st.key==="quiz"?`Pregunta ${st.sub+1} de ${st.subs}`:st.key==="practice"?`Ejercicio ${st.sub+1} de ${st.subs}`:"";
   const f=document.getElementById("focus");f.textContent="";
   const segBar=el("div",{class:"focus__segments","aria-hidden":"true"},secState.map(x=>el("span",{"data-s":x})));
   const exit=el("button",{class:"btn--small focus__exit",type:"button",onclick:exitFocus},el("span",{class:"hide-mobile"},"Salir del foco"),el("span",{class:"only-mobile"},"✕ Salir"),el("kbd",{class:"hide-mobile"},"Esc"));
-  const pos=el("p",{class:"focus__pos"},el("span",{class:"hide-mobile"},`W${current} · ${pad2(k+1)} de 07`),el("span",{class:"only-mobile"},`${pad2(k+1)}/07`+(st.subs>1?` · ${st.sub+1} de ${st.subs}`:"")));
+  const pos=el("p",{class:"focus__pos"},el("span",{class:"hide-mobile"},`W${current} · ${pad2(k+1)} de ${total}`),el("span",{class:"only-mobile"},`${pad2(k+1)}/${total}`+(st.subs>1?` · ${st.sub+1} de ${st.subs}`:"")));
   // Contenido del paso
   const title=t=>el("h2",{class:"focus__title",tabindex:"-1"},t);
   let body;
@@ -851,8 +890,8 @@ function renderFocus({animate=false}={}){
   }else body=[title(sectionTitle(st.key)),...sectionBody(st.key)];
   const prev=el("button",{class:"btn--ghost focus__prev",type:"button","aria-disabled":focusStep===0?"true":null,onclick:()=>{if(focusStep>0)focusGo(focusStep-1)}},"← Anterior");
   const last=focusStep===steps.length-1;
-  // 01, 02, 03 y 07 sin hacer: "Marcar hecho y seguir" (principal) + "Saltar" (secundario)
-  const manual=MANUAL.has(st.key)&&!sectionDone(current,st.key);
+  // En Corto, JS→Python, Código y Proyecto sin hacer: "Marcar hecho y seguir" (principal) + "Saltar" (secundario)
+  const manual=isManual(st.key)&&!sectionDone(current,st.key);
   const next=manual
     ?el("div",{class:"focus__next-group"},
       el("button",{class:"btn--secondary focus__skip",type:"button",onclick:()=>focusNext()},last?"Terminar":"Saltar"),
@@ -873,7 +912,7 @@ function renderFocus({animate=false}={}){
   (step.querySelector(".focus__title"))?.focus({preventScroll:true});
   function paintFocusProgress(){
     dots.querySelectorAll("span").forEach((d,j)=>d.dataset.s=subDone(j)?"done":"pending");
-    segBar.querySelectorAll("span").forEach((d,i)=>{if(i!==k)d.dataset.s=sectionDone(current,SECTIONS[i].key)?"done":"pending"});
+    segBar.querySelectorAll("span").forEach((d,i)=>{if(i!==k)d.dataset.s=sectionDone(current,vis[i].key)?"done":"pending"});
     renderHeader(route());
   }
 }
@@ -893,8 +932,8 @@ addEventListener("keydown",e=>{
 
 // ── Inicio
 const DAY_LETTERS=["L","M","X","J","V","S","D"];
-// Primera sección sin hacer de una semana (1–7), o null si está completa
-const firstOpenSection=i=>{const k=SECTIONS.findIndex(s=>!sectionDone(i,s.key));return k<0?null:k+1};
+// Primera sección visible sin hacer (índice 1–8 en SECTIONS), o null si está completa
+const firstOpenSection=i=>{const s=visibleSections(i).find(s=>!sectionDone(i,s.key));return s?sectionIdx(s.key)+1:null};
 // A dónde lleva "Continuar": state.last si sigue pendiente; si no, la primera sección sin hacer
 function continueTarget(){
   const l=prefs.last;
@@ -907,17 +946,18 @@ function continueTarget(){
 }
 // Detalle de la sección para el subtítulo: [texto largo, texto corto móvil, nombre en mono]
 function continueDetail(t){
-  const w=weeks[t.week],s=SECTIONS[t.section-1],n=pad2(t.section);
+  const w=weeks[t.week],s=SECTIONS[t.section-1],n=secNum(t.week,s.key);
   if(s.key==="practice"){
     let j=t.item;if(j==null||j>=w.practice.length||passed[`${t.week}-${j}`])j=Math.max(0,w.practice.findIndex((_,k)=>!passed[`${t.week}-${k}`]));
     return[`${n} ${s.title} — ejercicio ${j+1} de ${w.practice.length}: `,`${n} Practica · ejercicio ${j+1} de ${w.practice.length}`,snake(w.practice[j].name)];
   }
   if(s.key==="quiz"){const q=Math.max(0,w.quiz.findIndex((_,k)=>(answers[t.week]||{})[k]==null));return[`${n} ${s.title} — pregunta ${q+1} de ${w.quiz.length}`,`${n} Quiz · pregunta ${q+1} de ${w.quiz.length}`]}
+  if(s.key==="shorts"){const k=shortsSeen(t.week);return[`${n} Shorts — ${k} de ${w.shorts.length} vistos`,`${n} Shorts · ${k}/${w.shorts.length}`]}
   if(s.key==="pset"){const k=w.pset.filter((_,j)=>done[`${t.week}-${j}`]).length;return[`${n} ${s.title} — ${k} de ${w.pset.length} resueltos`,`${n} Problem set · ${k}/${w.pset.length}`]}
   return[`${n} ${s.title}`,`${n} ${s.short}`];
 }
 const segs=(states,cls="segments")=>el("div",{class:cls,"aria-hidden":"true"},states.map(x=>el("span",{"data-s":x})));
-const weekSegStates=(i,cur)=>SECTIONS.map((s,k)=>sectionDone(i,s.key)?"done":k+1===cur?"current":"pending");
+const weekSegStates=(i,cur)=>visibleSections(i).map(s=>sectionDone(i,s.key)?"done":sectionIdx(s.key)+1===cur?"current":"pending");
 
 function renderHome(){
   const main=document.getElementById("main");main.textContent="";main.className="app home";
@@ -942,7 +982,7 @@ function renderHome(){
   // Cuenta atrás al 31 dic y semana de estudio
   const now=new Date();const end=new Date(now.getFullYear(),11,31,23,59);
   const days=Math.max(0,Math.ceil((end-now)/86400000));
-  const left=[...Array(10).keys()].reduce((a,i)=>a+(1-sectionsDone(i)/7),0); // semanas que faltan, con fracción
+  const left=[...Array(10).keys()].reduce((a,i)=>a+(1-sectionsDone(i)/sectionTotal(i)),0); // semanas que faltan, con fracción
   const every=left>0?Math.max(1,Math.round(days/left)):0;
   const leftTxt=left.toLocaleString("es",{maximumFractionDigits:1});
   const studied=new Set(prefs.studyDays||[]);
@@ -969,7 +1009,7 @@ function renderHome(){
     const st=weekStatus(i),n=sectionsDone(i);const title=weeks[i]?.title||WEEK_NAMES[i];
     const kids=[el("span",{class:"status-dot","data-state":st,"aria-hidden":"true"}),el("span",{class:"week-row__id"},`W${i}`),el("span",{class:"week-row__title"},title),
       segs(weekSegStates(i,cur),"segments week-row__segs"),
-      el("span",{class:"week-row__pct"},n?`${Math.floor(n/7*100)}%`:"—"),
+      el("span",{class:"week-row__pct"},n?`${Math.floor(n/sectionTotal(i)*100)}%`:"—"),
       el("span",{class:"week-row__status"},STATUS_TEXT[st])];
     list.append(st==="empty"
       ?el("div",{class:"week-row","data-state":st,"aria-disabled":"true"},...kids)

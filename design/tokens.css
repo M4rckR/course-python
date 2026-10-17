@@ -1,4 +1,4 @@
-/* Bitácora CS50P — tokens v1
+/* Bitácora CS50P — tokens v1.1 (añade --border-dashed, --border-unconfirmed, --console-input*)
    Fuentes: <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;500;700&display=swap">
    Tema: sin atributo = sigue al sistema; data-theme="light" | "dark" en <html> fuerza. */
 
@@ -104,6 +104,13 @@
   --border: 1px solid var(--line);
   --border-current: 1.5px solid var(--accent);
   --border-strong: 1.5px solid var(--ink);
+  --border-dashed: 1px dashed var(--line);        /* pendiente: paso de flujo, "te faltan", 08 Proyecto */
+  --border-unconfirmed: 1px dashed var(--ink-3);  /* chip "sin confirmar" de Shorts */
+
+  /* Consola de Ejecutar */
+  --console-input: var(--accent);       /* lo que escribe el usuario */
+  --console-input-bg: var(--accent-soft);
+  --console-meta: var(--ink-3);         /* "$ python x.py", "— fin —" */
 
   /* Sombras: no hay elevación. Solo anillos funcionales. */
   --shadow-none: none;

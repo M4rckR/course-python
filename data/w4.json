@@ -1,1 +1,310 @@
-{"week": 4, "title": "Librerías", "time": "lectura 25 min · práctica 3 h", "topics": ["import · random · statistics", "sys.argv · sys.exit · slice", "pip · paquetes (cowsay)", "APIs · requests · json", "tu propia librería"], "notesUrl": "https://cs50.harvard.edu/python/notes/4/", "videoUrl": "https://cs50.harvard.edu/python/weeks/4/", "summary": ["Una **librería** es código reusable; un **módulo** es un archivo que importas. `import random` trae el módulo; `from random import choice` trae solo esa función (y la llamas sin prefijo).", "`random.choice(lista)` elige un elemento, `random.randint(a, b)` da un entero entre `a` y `b`, `random.shuffle(lista)` baraja la lista **en su sitio** (no devuelve nada).", "`statistics.mean([100, 90])` calcula el promedio.", "`sys.argv` es la lista de argumentos de la terminal; el índice 0 es el nombre del script. `python name.py David` → `sys.argv[1]` es `\"David\"`.", "Si faltan argumentos, `sys.argv[1]` lanza `IndexError`: lo manejas con `try/except` o, mejor, revisando `len(sys.argv)`.", "`sys.exit(\"mensaje\")` termina el programa mostrando el mensaje.", "El **slice** `sys.argv[1:]` te da todos los argumentos menos el nombre del script.", "Los **paquetes** de terceros viven en PyPI y se instalan con `pip install` (ej. `pip install cowsay`, `pip install requests`).", "Una **API** te deja usar datos/código de otros. `requests.get(url)` pide la URL como un navegador y `response.json()` convierte el JSON en dict/lista de Python.", "`json.dumps(obj, indent=2)` imprime el JSON bien formateado, útil para explorar la respuesta.", "Puedes hacer tu propia librería: pones funciones en `sayings.py` y en otro archivo haces `from sayings import goodbye`."], "jsToPy": [{"js": "import x from \"x\"", "py": "import x", "note": "Se usa como `x.funcion()`"}, {"js": "import { a } from \"x\"", "py": "from x import a", "note": "Lo llamas sin prefijo"}, {"js": "npm install axios", "py": "pip install requests", "note": ""}, {"js": "process.argv", "py": "sys.argv", "note": "`sys.argv[0]` es el nombre del script (en JS los args empiezan en el índice 2)"}, {"js": "process.argv.slice(2)", "py": "sys.argv[1:]", "note": "Slice de lista"}, {"js": "Math.random()", "py": "random.randint(1, 10)", "note": "En Python `randint` incluye ambos extremos"}, {"js": "const r = await axios.get(u); r.data", "py": "r = requests.get(u); r.json()", "note": "Sin await: es síncrono"}, {"js": "JSON.stringify(o, null, 2)", "py": "json.dumps(o, indent=2)", "note": ""}], "examples": [{"label": "Argumentos con validación (de las notas):", "code": "import sys\n\nif len(sys.argv) < 2:\n    sys.exit(\"Too few arguments\")\nelif len(sys.argv) > 2:\n    sys.exit(\"Too many arguments\")\n\nprint(\"hello, my name is\", sys.argv[1])"}, {"label": "Barajar y recorrer (random.shuffle):", "code": "import random\n\ncards = [\"jack\", \"queen\", \"king\"]\nrandom.shuffle(cards)\nfor card in cards:\n    print(card)"}, {"label": "Slice: todos los argumentos menos el nombre del script:", "code": "import sys\n\nif len(sys.argv) < 2:\n    sys.exit(\"Too few arguments\")\n\nfor arg in sys.argv[1:]:\n    print(\"hello, my name is\", arg)"}, {"label": "API de iTunes con requests + json:", "code": "import json\nimport requests\nimport sys\n\nif len(sys.argv) != 2:\n    sys.exit()\n\nresponse = requests.get(\"https://itunes.apple.com/search?entity=song&limit=50&term=\" + sys.argv[1])\n\no = response.json()\nfor result in o[\"results\"]:\n    print(result[\"trackName\"])"}, {"label": "Tu propia librería (sayings.py y say.py):", "code": "# sayings.py\ndef hello(name):\n    print(f\"hello, {name}\")\n\n\ndef goodbye(name):\n    print(f\"goodbye, {name}\")\n\n# say.py\nimport sys\n\nfrom sayings import goodbye\n\nif len(sys.argv) == 2:\n    goodbye(sys.argv[1])"}], "traps": ["`sys.argv[0]` es el nombre del script: tus argumentos empiezan en `sys.argv[1]`.", "`random.shuffle(lista)` modifica la lista y devuelve `None`: no hagas `x = random.shuffle(x)`.", "Con `from random import choice` ya no existe el nombre `random`: llamas `choice(...)`, no `random.choice(...)`.", "Al concatenar la URL con `sys.argv[1]`, valida antes la cantidad de argumentos; si no, `IndexError`.", "`pip install` va en la terminal, no dentro del archivo `.py`."], "quiz": [{"q": "¿Qué es `sys.argv[0]`?", "options": ["El primer argumento del usuario", "El nombre del script", "La palabra python", "Siempre vacío"], "answer": 1, "why": "Los argumentos del usuario empiezan en el índice 1."}, {"q": "¿Qué hace `from random import choice`?", "options": ["Importa todo random", "Importa solo choice y la usas sin prefijo", "Instala random con pip", "No hace nada"], "answer": 1, "why": "Luego llamas `choice([...])` directo, sin `random.`."}, {"q": "¿Qué devuelve `random.shuffle(cards)`?", "options": ["La lista barajada", "Una copia barajada", "None: baraja la lista en su sitio", "Un entero"], "answer": 2, "why": "Modifica `cards` directamente y no retorna nada."}, {"q": "¿Qué te da `sys.argv[1:]`?", "options": ["Solo el primer argumento", "Todos los argumentos sin el nombre del script", "Solo el último", "El nombre del script"], "answer": 1, "why": "Es un slice desde el índice 1 hasta el final."}, {"q": "¿Qué hace `response.json()` con `requests`?", "options": ["Envía un JSON a la API", "Convierte la respuesta JSON en dict/lista de Python", "Instala la librería", "Imprime el texto crudo"], "answer": 1, "why": "Así puedes navegar con `o[\"results\"]`, `result[\"trackName\"]`, etc."}], "submit": "Prueba con `check50` y envía con `submit50` (el comando exacto está en cada enunciado). Plazo del ciclo: **31 dic 2026**. Algunos problemas necesitan `pip install` (emoji, pyfiglet, inflect, requests): hazlo en cs50.dev.", "pset": [{"name": "Emojize", "url": "https://cs50.harvard.edu/python/psets/4/emojize/", "task": "En `emojize.py`, pide un texto en inglés y reemplaza códigos/alias como `:thumbs_up:` por su emoji.", "hints": ["`pip install emoji` y revisa su función `emojize`.", "Acepta alias como `:thumbsup:`; mira el parámetro con nombre `language` de `emojize`."]}, {"name": "Frank, Ian and Glen's Letters", "url": "https://cs50.harvard.edu/python/psets/4/figlet/", "task": "En `figlet.py`, con 0 argumentos usa fuente aleatoria; con `-f`/`--font` y un nombre válido usa esa fuente; si no, `sys.exit(\"Invalid usage\")`. Pide un texto e imprímelo en ASCII art.", "hints": ["Valida `sys.argv`: 1 solo elemento (sin args) o 3 elementos con `-f`/`--font` como el segundo.", "Usa `pyfiglet` (`Figlet`, `renderText`) y `random.choice` para la fuente aleatoria."]}, {"name": "Adieu, Adieu", "url": "https://cs50.harvard.edu/python/psets/4/adieu/", "task": "En `adieu.py`, pide nombres línea por línea hasta Ctrl-D e imprime `Adieu, adieu, to Liesl, Friedrich, and Louisa` (con 1 o 2 nombres cambia el formato).", "hints": ["Lee con `input()` dentro de un `while True` y atrapa `EOFError` (Ctrl-D).", "`pip install inflect`: revisa su documentación para unir listas en inglés."]}, {"name": "Guessing Game", "url": "https://cs50.harvard.edu/python/psets/4/game/", "task": "En `game.py`, pide `Level:` (entero positivo), elige un número de 1 a n y pide `Guess:` hasta acertar; responde `Too small!`, `Too large!` o `Just right!`.", "hints": ["Reprompt con `try/except ValueError` cuando no sea entero positivo.", "`random.randint(1, n)` incluye ambos extremos."]}, {"name": "Little Professor", "url": "https://cs50.harvard.edu/python/psets/4/professor/", "task": "En `professor.py`, implementa `main()`, `get_level()` y `generate_integer(level)`: 10 sumas `X + Y =` con 3 intentos cada una (`EEE` si fallas) y muestra el puntaje.", "hints": ["`get_level()` repite hasta que el usuario dé 1, 2 o 3 y lo retorna.", "`generate_integer(level)` retorna un entero no negativo de `level` dígitos y lanza `ValueError` si el nivel no es 1, 2 o 3."]}, {"name": "Bitcoin Price Index", "url": "https://cs50.harvard.edu/python/psets/4/bitcoin/", "task": "En `bitcoin.py`, recibe n por línea de comandos y muestra el costo en USD de n bitcoins con 4 decimales y comas (`$38,761.0833`), usando la API CoinCap v3 (requiere API key).", "hints": ["Sin argumento: `sys.exit(\"Missing command-line argument\")`; si no es número: `sys.exit(\"Command-line argument is not a number\")`.", "Envuelve `requests.get(...)` en `try/except requests.RequestException`; el precio viene como str en `priceUsd`, conviértelo a `float`.", "Formato: `f\"${monto:,.4f}\"`."]}], "practice": [{"name": "Cuotas con math", "prompt": "Pide un total y una cuota mensual (`input(\"Total: \")` y `input(\"Cuota: \")`). Imprime cuántos meses toma pagar: `Meses: 4`. Usa `math.ceil`.", "starter": "import math\n\n\ndef main():\n    ...\n\n\nmain()\n", "tests": [{"stdin": ["1000", "300"], "expect": "Meses: 4"}, {"stdin": ["900", "300"], "expect": "Meses: 3"}]}, {"name": "Dado justo", "prompt": "Escribe `roll()` que devuelva un entero aleatorio de 1 a 6 con `random`.", "starter": "import random\n\n\ndef roll():\n    ...\n", "tests": [{"code": "print(all(1 <= roll() <= 6 for _ in range(300)))", "expect": "True"}, {"code": "print(len(set(roll() for _ in range(500))))", "expect": "6"}]}, {"name": "Guarda main", "prompt": "Este archivo debe correr `main()` solo si se ejecuta directo. Agrega la guarda `__name__`. (El test importa tu código y llama a `double`.)", "starter": "def main():\n    print(double(int(input(\"n: \"))))\n\n\ndef double(n):\n    return n * 2\n\n\nmain()\n", "tests": [{"code": "print(double(21))", "expect": "42"}]}], "project": {"goal": "Tu tracker ya lee **argumentos**.", "steps": ["`python tracker.py resumen` imprime el total; sin argumento, registra un gasto.", "Valida `sys.argv` y sal con `sys.exit` si el comando no existe.", "Bonus: `pip install pandas` y lee tu `.xls` de BBVA con `pd.read_excel` (solo en tu compu)."]}, "sources": ["https://cs50.harvard.edu/python/notes/4/", "https://cs50.harvard.edu/python/psets/4/", "https://cs50.harvard.edu/python/psets/4/emojize/", "https://cs50.harvard.edu/python/psets/4/figlet/", "https://cs50.harvard.edu/python/psets/4/adieu/", "https://cs50.harvard.edu/python/psets/4/game/", "https://cs50.harvard.edu/python/psets/4/professor/", "https://cs50.harvard.edu/python/psets/4/bitcoin/"]}
+{
+ "week": 4,
+ "title": "Librerías",
+ "time": "lectura 25 min · práctica 3 h",
+ "topics": [
+  "import · random · statistics",
+  "sys.argv · sys.exit · slice",
+  "pip · paquetes (cowsay)",
+  "APIs · requests · json",
+  "tu propia librería"
+ ],
+ "notesUrl": "https://cs50.harvard.edu/python/notes/4/",
+ "videoUrl": "https://cs50.harvard.edu/python/weeks/4/",
+ "summary": [
+  "David arranca con la idea de **reusar código**: si te encuentras copiando y pegando entre proyectos, eso va en una **librería**. Un **módulo** es una librería (un archivo con funciones) y Python trae varios de fábrica.",
+  "`import random` y `random.choice([\"heads\", \"tails\"])` (lanzar una moneda en `generate.py`). Con `from random import choice` traes solo `choice` y la llamas sin prefijo; la ventaja de `import random` es que todo queda **en el scope de `random`** y no choca con un `choice` tuyo. ¿Cuál es mejor? \"Depende\".",
+  "Más de `random`: `random.randint(1, 10)` (incluye ambos extremos) y `random.shuffle(cards)`, que baraja la lista **en su sitio** y no devuelve nada (lo ves leyendo la documentación).",
+  "`statistics.mean([100, 90])` → `95` en `average.py`: otro módulo de la librería estándar.",
+  "**Argumentos de línea de comandos** con `sys.argv`: la lista de \"todas las palabras que el humano escribió en el prompt\". `sys.argv[0]` es el nombre del archivo, así que el nombre del usuario está en `sys.argv[1]` (el ejemplo de la etiqueta \"Hello, my name is\").",
+  "Sin argumento, `sys.argv[1]` revienta con `IndexError`. Primero lo atrapa con `try/except IndexError`, luego prefiere revisar `len(sys.argv)` con `if/elif/else` para dar mensajes más específicos (\"Too few\" / \"Too many arguments\").",
+  "`sys.exit(\"mensaje\")` termina **todo el programa**: así pone los chequeos de error arriba y deja el `print` sin indentar abajo. Con el **slice** `sys.argv[1:]` imprime una etiqueta por cada nombre, saltándose el nombre del archivo.",
+  "**Paquetes** de terceros: viven en PyPI y se instalan con `pip install cowsay` en la terminal. `cowsay.cow(...)` y `cowsay.trex(...)` imprimen ASCII art.",
+  "**APIs** con `requests`: `requests.get(url)` actúa como un navegador contra la API de iTunes; `response.json()` convierte el JSON (formato de texto \"agnóstico al lenguaje\") en dicts/listas, y `json.dumps(..., indent=2)` lo imprime legible para explorarlo. Cierra creando **su propio módulo** `sayings.py`, protegido con `if __name__ == \"__main__\":`."
+ ],
+ "jsToPy": [
+  {
+   "js": "import x from \"x\"",
+   "py": "import x",
+   "note": "Se usa como `x.funcion()`; todo queda en el scope de `x`"
+  },
+  {
+   "js": "import { a } from \"x\"",
+   "py": "from x import a",
+   "note": "Lo llamas sin prefijo"
+  },
+  {
+   "js": "npm install cowsay",
+   "py": "pip install cowsay",
+   "note": "En la terminal, desde PyPI"
+  },
+  {
+   "js": "process.argv",
+   "py": "sys.argv",
+   "note": "`sys.argv[0]` es el nombre del archivo (en Node los args empiezan en el índice 2)"
+  },
+  {
+   "js": "process.argv.slice(2)",
+   "py": "sys.argv[1:]",
+   "note": "Slice de lista"
+  },
+  {
+   "js": "process.exit(1) / console.error(msg)",
+   "py": "sys.exit(\"msg\")",
+   "note": "Termina todo el programa e imprime el mensaje"
+  },
+  {
+   "js": "Math.floor(Math.random() * 10) + 1",
+   "py": "random.randint(1, 10)",
+   "note": "`randint` incluye ambos extremos"
+  },
+  {
+   "js": "const r = await axios.get(u); r.data",
+   "py": "r = requests.get(u); r.json()",
+   "note": "Sin await: es síncrono"
+  },
+  {
+   "js": "JSON.stringify(o, null, 2)",
+   "py": "json.dumps(o, indent=2)",
+   "note": ""
+  },
+  {
+   "js": "if (require.main === module) main()",
+   "py": "if __name__ == \"__main__\": main()",
+   "note": "Para que `main()` no corra al importar"
+  }
+ ],
+ "examples": [
+  {
+   "label": "generate.py — versión de clase (moneda y cartas):",
+   "code": "import random\n\ncoin = random.choice([\"heads\", \"tails\"])\nprint(coin)\n\n# generate.py (después, barajando)\nimport random\n\ncards = [\"jack\", \"queen\", \"king\"]\nrandom.shuffle(cards)\nfor card in cards:\n    print(card)"
+  },
+  {
+   "label": "name.py — versión final con sys.exit (y la del slice):",
+   "code": "import sys\n\nif len(sys.argv) < 2:\n    sys.exit(\"Too few arguments\")\nelif len(sys.argv) > 2:\n    sys.exit(\"Too many arguments\")\n\nprint(\"hello, my name is\", sys.argv[1])\n\n# name.py (después, con slice para varios nombres)\nimport sys\n\nif len(sys.argv) < 2:\n    sys.exit(\"Too few arguments\")\n\nfor arg in sys.argv[1:]:\n    print(\"hello, my name is\", arg)"
+  },
+  {
+   "label": "itunes.py — versión de clase:",
+   "code": "import json\nimport requests\nimport sys\n\nif len(sys.argv) != 2:\n    sys.exit()\n\nresponse = requests.get(\"https://itunes.apple.com/search?entity=song&limit=50&term=\" + sys.argv[1])\n\no = response.json()\nfor result in o[\"results\"]:\n    print(result[\"trackName\"])"
+  },
+  {
+   "label": "sayings.py + say.py — tu propio módulo:",
+   "code": "# sayings.py\ndef hello(name):\n    print(f\"hello, {name}\")\n\n\ndef goodbye(name):\n    print(f\"goodbye, {name}\")\n\n# say.py\nimport sys\n\nfrom sayings import goodbye\n\nif len(sys.argv) == 2:\n    goodbye(sys.argv[1])"
+  }
+ ],
+ "traps": [
+  "`IndexError: list index out of range` al correr `python name.py` sin nombre: David lo llama uno de los errores más comunes. Cambiar `[1]` por `[0]` **no** lo arregla: `sys.argv[0]` es el nombre del archivo.",
+  "Si quitas el `else` y desindentas el `print` pero solo haces `print(\"Too few arguments\")`, el programa sigue y vuelve a reventar con `IndexError`: por eso usa `sys.exit` en los caminos de error.",
+  "Recorrer todo `sys.argv` imprime una etiqueta de más con el nombre del archivo: usa `sys.argv[1:]`.",
+  "`random.shuffle(cards)` modifica la lista y no devuelve nada: no hagas `cards = random.shuffle(cards)`.",
+  "Si importas de tu módulo y este llama `main()` sin la guarda, **se ejecuta al importarlo** (salen \"hello, world\" y \"goodbye, world\"). Arréglalo con `if __name__ == \"__main__\":`.",
+  "Con `from random import choice` ya no escribes `random.choice`; y si tú también tienes algo llamado `choice`, chocan."
+ ],
+ "quiz": [
+  {
+   "q": "Corres `python name.py` sin argumentos y el código hace `print(\"Hello, my name is\", sys.argv[1])`. ¿Qué pasa?",
+   "options": [
+    "Imprime el nombre del archivo",
+    "Imprime `None`",
+    "`IndexError: list index out of range`",
+    "Pide el nombre con input"
+   ],
+   "answer": 2,
+   "why": "`sys.argv` solo tiene un elemento (el nombre del archivo), así que el índice 1 no existe."
+  },
+  {
+   "q": "¿Por qué David cambia `print(\"Too few arguments\")` por `sys.exit(\"Too few arguments\")`?",
+   "options": [
+    "Porque `print` no muestra mensajes en la terminal",
+    "Porque `sys.exit` es más rápido",
+    "Para atrapar el `IndexError`",
+    "Para que el programa termine ahí y el código de abajo pueda asumir que el argumento existe"
+   ],
+   "answer": 3,
+   "why": "Así deja los chequeos de error arriba y la lógica principal sin indentar, sin volver a caer en `IndexError`."
+  },
+  {
+   "q": "Según la clase, ¿qué ventaja tiene `import random` sobre `from random import choice`?",
+   "options": [
+    "Todo queda en el scope de `random`, así no choca con un `choice` tuyo",
+    "Es obligatorio en Python 3",
+    "Carga más rápido",
+    "Permite usar `pip`"
+   ],
+   "answer": 0,
+   "why": "David concluye que \"depende\": `from` es más corto, `import` evita colisiones de nombres."
+  },
+  {
+   "q": "En `itunes.py`, ¿para qué usa `json.dumps(response.json(), indent=2)`?",
+   "options": [
+    "Para enviar datos a Apple",
+    "Para imprimir la respuesta legible y entender su estructura",
+    "Para instalar requests",
+    "Para convertir a CSV"
+   ],
+   "answer": 1,
+   "why": "Primero explora la estructura (con `limit=1`) y recién después extrae `result[\"trackName\"]`."
+  },
+  {
+   "q": "Haces `from sayings import goodbye` y salen \"hello, world\" y \"goodbye, world\" antes de tu saludo. ¿Por qué?",
+   "options": [
+    "`goodbye` está mal escrito",
+    "Falta `pip install sayings`",
+    "`sys.argv` está vacío",
+    "`sayings.py` llama `main()` sin `if __name__ == \"__main__\":`, así que corre al importarse"
+   ],
+   "answer": 3,
+   "why": "Importar un archivo lo ejecuta; la guarda hace que `main()` solo corra cuando ejecutas ese archivo directamente."
+  }
+ ],
+ "submit": "Prueba con `check50` y envía con `submit50` (el comando exacto está en cada enunciado). Plazo del ciclo: **31 dic 2026**. Algunos problemas necesitan `pip install` (emoji, pyfiglet, inflect, requests): hazlo en cs50.dev.",
+ "pset": [
+  {
+   "name": "Emojize",
+   "url": "https://cs50.harvard.edu/python/psets/4/emojize/",
+   "task": "En `emojize.py`, pide un texto en inglés y reemplaza códigos/alias como `:thumbs_up:` por su emoji.",
+   "hints": [
+    "`pip install emoji` y revisa su función `emojize`.",
+    "Acepta alias como `:thumbsup:`; mira el parámetro con nombre `language` de `emojize`."
+   ]
+  },
+  {
+   "name": "Frank, Ian and Glen's Letters",
+   "url": "https://cs50.harvard.edu/python/psets/4/figlet/",
+   "task": "En `figlet.py`, con 0 argumentos usa fuente aleatoria; con `-f`/`--font` y un nombre válido usa esa fuente; si no, `sys.exit(\"Invalid usage\")`. Pide un texto e imprímelo en ASCII art.",
+   "hints": [
+    "Valida `sys.argv`: 1 solo elemento (sin args) o 3 elementos con `-f`/`--font` como el segundo.",
+    "Usa `pyfiglet` (`Figlet`, `renderText`) y `random.choice` para la fuente aleatoria."
+   ]
+  },
+  {
+   "name": "Adieu, Adieu",
+   "url": "https://cs50.harvard.edu/python/psets/4/adieu/",
+   "task": "En `adieu.py`, pide nombres línea por línea hasta Ctrl-D e imprime `Adieu, adieu, to Liesl, Friedrich, and Louisa` (con 1 o 2 nombres cambia el formato).",
+   "hints": [
+    "Lee con `input()` dentro de un `while True` y atrapa `EOFError` (Ctrl-D).",
+    "`pip install inflect`: revisa su documentación para unir listas en inglés."
+   ]
+  },
+  {
+   "name": "Guessing Game",
+   "url": "https://cs50.harvard.edu/python/psets/4/game/",
+   "task": "En `game.py`, pide `Level:` (entero positivo), elige un número de 1 a n y pide `Guess:` hasta acertar; responde `Too small!`, `Too large!` o `Just right!`.",
+   "hints": [
+    "Reprompt con `try/except ValueError` cuando no sea entero positivo.",
+    "`random.randint(1, n)` incluye ambos extremos."
+   ]
+  },
+  {
+   "name": "Little Professor",
+   "url": "https://cs50.harvard.edu/python/psets/4/professor/",
+   "task": "En `professor.py`, implementa `main()`, `get_level()` y `generate_integer(level)`: 10 sumas `X + Y =` con 3 intentos cada una (`EEE` si fallas) y muestra el puntaje.",
+   "hints": [
+    "`get_level()` repite hasta que el usuario dé 1, 2 o 3 y lo retorna.",
+    "`generate_integer(level)` retorna un entero no negativo de `level` dígitos y lanza `ValueError` si el nivel no es 1, 2 o 3."
+   ]
+  },
+  {
+   "name": "Bitcoin Price Index",
+   "url": "https://cs50.harvard.edu/python/psets/4/bitcoin/",
+   "task": "En `bitcoin.py`, recibe n por línea de comandos y muestra el costo en USD de n bitcoins con 4 decimales y comas (`$38,761.0833`), usando la API CoinCap v3 (requiere API key).",
+   "hints": [
+    "Sin argumento: `sys.exit(\"Missing command-line argument\")`; si no es número: `sys.exit(\"Command-line argument is not a number\")`.",
+    "Envuelve `requests.get(...)` en `try/except requests.RequestException`; el precio viene como str en `priceUsd`, conviértelo a `float`.",
+    "Formato: `f\"${monto:,.4f}\"`."
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "name": "Cuotas con math",
+   "prompt": "Pide un total y una cuota mensual (`input(\"Total: \")` y `input(\"Cuota: \")`). Imprime cuántos meses toma pagar: `Meses: 4`. Usa `math.ceil`.",
+   "starter": "import math\n\n\ndef main():\n    ...\n\n\nmain()\n",
+   "tests": [
+    {
+     "stdin": [
+      "1000",
+      "300"
+     ],
+     "expect": "Meses: 4"
+    },
+    {
+     "stdin": [
+      "900",
+      "300"
+     ],
+     "expect": "Meses: 3"
+    }
+   ]
+  },
+  {
+   "name": "Dado justo",
+   "prompt": "Escribe `roll()` que devuelva un entero aleatorio de 1 a 6 con `random`.",
+   "starter": "import random\n\n\ndef roll():\n    ...\n",
+   "tests": [
+    {
+     "code": "print(all(1 <= roll() <= 6 for _ in range(300)))",
+     "expect": "True"
+    },
+    {
+     "code": "print(len(set(roll() for _ in range(500))))",
+     "expect": "6"
+    }
+   ]
+  },
+  {
+   "name": "Guarda main",
+   "prompt": "Este archivo debe correr `main()` solo si se ejecuta directo. Agrega la guarda `__name__`. (El test importa tu código y llama a `double`.)",
+   "starter": "def main():\n    print(double(int(input(\"n: \"))))\n\n\ndef double(n):\n    return n * 2\n\n\nmain()\n",
+   "tests": [
+    {
+     "code": "print(double(21))",
+     "expect": "42"
+    }
+   ]
+  }
+ ],
+ "project": {
+  "goal": "Tu tracker ya lee **argumentos**.",
+  "steps": [
+   "`python tracker.py resumen` imprime el total; sin argumento, registra un gasto.",
+   "Valida `sys.argv` y sal con `sys.exit` si el comando no existe.",
+   "Bonus: `pip install pandas` y lee tu `.xls` de BBVA con `pd.read_excel` (solo en tu compu)."
+  ]
+ },
+ "sources": [
+  "https://cs50.harvard.edu/python/notes/4/",
+  "https://cs50.harvard.edu/python/psets/4/",
+  "https://cs50.harvard.edu/python/psets/4/emojize/",
+  "https://cs50.harvard.edu/python/psets/4/figlet/",
+  "https://cs50.harvard.edu/python/psets/4/adieu/",
+  "https://cs50.harvard.edu/python/psets/4/game/",
+  "https://cs50.harvard.edu/python/psets/4/professor/",
+  "https://cs50.harvard.edu/python/psets/4/bitcoin/",
+  "https://cdn.cs50.net/python/2022/x/lectures/4/lang/en/lecture4.txt"
+ ],
+ "tips": [
+  "Si te ves copiando y pegando código entre proyectos, sácalo a una función y luego a tu propio módulo.",
+  "Pon el chequeo de errores arriba (con `sys.exit`) y deja la lógica principal abajo, sin indentar: queda más claro.",
+  "Cuando puedes anticipar el problema, revisar `len(sys.argv)` es mejor que depender de la excepción: puedes dar mensajes más específicos.",
+  "Lee la documentación: ahí ves que `random.shuffle` modifica la lista y no retorna nada."
+ ],
+ "shorts": [
+  {
+   "title": "random",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "API Calls",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "Creating Modules and Packages",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  }
+ ],
+ "transcriptUrl": "https://cdn.cs50.net/python/2022/x/lectures/4/lang/en/lecture4.txt"
+}

@@ -1,1 +1,307 @@
-{"week": 1, "title": "Condicionales", "time": "lectura 20 min · práctica 2–3 h", "topics": ["if / elif / else", "Operadores de comparación", "or · and", "Módulo %", "Funciones que devuelven bool", "match / case"], "notesUrl": "https://cs50.harvard.edu/python/notes/1/", "videoUrl": "https://cs50.harvard.edu/python/weeks/1/", "summary": ["Un **condicional** deja que el programa elija camino. `if`, `elif` y `else` llevan dos puntos y bloque indentado.", "Comparaciones: `>`, `<`, `>=`, `<=`, `==`, `!=`. Ojo: `=` **asigna**, `==` **compara**.", "`elif` evita revisar de más y `else` es el caso por defecto cuando nada se cumple.", "Combina condiciones con `or` y `and`. Puedes encadenar: `90 <= score <= 100`.", "`%` (módulo) da el resto: `x % 2 == 0` significa que x es par.", "Estilo *pythonic*: en vez de `return True if n % 2 == 0 else False`, escribe `return n % 2 == 0`.", "`match` / `case` compara un valor con varios casos. `_` atrapa todo (como `else`) y `|` junta varios valores en un `case`.", "Los booleanos son `True` y `False`, con mayúscula."], "jsToPy": [{"js": "if (x > 0) { } else if (x < 0) { } else { }", "py": "if x > 0:\n    ...\nelif x < 0:\n    ...\nelse:\n    ...", "note": "`elif`, no `else if`; dos puntos e indentación"}, {"js": "&&  ||  !", "py": "and  or  not", "note": "Se escriben en inglés"}, {"js": "true / false", "py": "True / False", "note": "Con mayúscula"}, {"js": "x === y  /  x !== y", "py": "x == y  /  x != y", "note": "No existe `===`"}, {"js": "switch (x) { case \"a\": ... default: ... }", "py": "match x:\n    case \"a\":\n        ...\n    case _:", "note": "`case _:` es el default"}, {"js": "case \"a\": case \"b\":", "py": "case \"a\" | \"b\":", "note": "`|` junta varios valores en un caso"}, {"js": "90 <= s && s <= 100", "py": "90 <= s <= 100", "note": "Comparación encadenada"}], "examples": [{"label": "`elif` y comparación encadenada (grade.py de las notas):", "code": "score = int(input(\"Score: \"))\n\nif 90 <= score <= 100:\n    print(\"Grade: A\")\nelif 80 <= score < 90:\n    print(\"Grade: B\")\nelif 70 <= score < 80:\n    print(\"Grade: C\")\nelif 60 <= score < 70:\n    print(\"Grade: D\")\nelse:\n    print(\"Grade: F\")"}, {"label": "Paridad con `%` y función que devuelve bool:", "code": "def main():\n    x = int(input(\"What's x? \"))\n    if is_even(x):\n        print(\"Even\")\n    else:\n        print(\"Odd\")\n\n\ndef is_even(n):\n    return n % 2 == 0\n\n\nmain()"}, {"label": "`match` con `|` y `_`:", "code": "name = input(\"What's your name? \")\n\nmatch name:\n    case \"Harry\" | \"Hermione\" | \"Ron\":\n        print(\"Gryffindor\")\n    case \"Draco\":\n        print(\"Slytherin\")\n    case _:\n        print(\"Who?\")"}], "traps": ["`=` asigna y `==` compara. `if x = 5:` es error.", "`input()` devuelve texto: `\"5\" == 5` es `False`. Convierte con `int()` antes de comparar números.", "`if x == \"a\" or \"b\":` siempre es verdadero porque `\"b\"` es texto no vacío. Escribe `x == \"a\" or x == \"b\"` (o `case \"a\" | \"b\"` en un `match`).", "Con varios `if` sueltos se revisan todos; con `elif` solo hasta que uno se cumple. Si los rangos se pisan, el orden importa."], "quiz": [{"q": "¿Cómo se escribe `else if` en Python?", "options": ["else if", "elseif", "elif", "elsif"], "answer": 2, "why": "Python usa `elif`."}, {"q": "¿Qué devuelve `\"5\" == 5`?", "options": ["True", "False", "Error", "None"], "answer": 1, "why": "Son tipos distintos: texto y número. `input()` siempre devuelve texto."}, {"q": "¿Qué hace `x % 2 == 0`?", "options": ["Divide x entre 2", "Revisa si x es par", "Asigna 0 a x", "Revisa si x es 2"], "answer": 1, "why": "`%` da el resto de la división; si el resto entre 2 es 0, es par."}, {"q": "¿Qué evalúa `x == \"a\" or \"b\"` si x es \"z\"?", "options": ["False", "\"b\" (verdadero)", "Error", "\"z\""], "answer": 1, "why": "`or` devuelve `\"b\"`, un texto no vacío, y por tanto verdadero."}, {"q": "¿Qué hace `case _:` en un `match`?", "options": ["Error", "Atrapa cualquier valor (como else)", "Ignora el match", "Repite el último caso"], "answer": 1, "why": "`_` es el comodín: coincide con todo lo que no coincidió antes."}], "submit": "Prueba con `check50` y envía con `submit50` (el comando exacto está en cada enunciado). Plazo del ciclo: **31 dic 2026**.", "pset": [{"name": "Deep Thought", "url": "https://cs50.harvard.edu/python/psets/1/deep/", "task": "Pregunta por la respuesta a la vida, el universo y todo; imprime `Yes` si es `42`, `forty-two` o `forty two` (ignorando espacios y mayúsculas) y `No` en otro caso. Archivo `deep.py`.", "hints": ["Puedes comparar con el texto `\"42\"` sin convertir a int.", "Normaliza con `.strip().lower()` y combina opciones con `or`."]}, {"name": "Home Federal Savings Bank", "url": "https://cs50.harvard.edu/python/psets/1/bank/", "task": "Pide un saludo (ignora espacios al inicio y mayúsculas): empieza con \"hello\" imprime `$0`; con \"h\" (pero no \"hello\") `$20`; otro caso `$100`. Archivo `bank.py`.", "hints": ["Usa los métodos de str, por ejemplo `startswith`.", "Revisa \"hello\" antes que \"h\": el orden de `if`/`elif` importa."]}, {"name": "File Extensions", "url": "https://cs50.harvard.edu/python/psets/1/extensions/", "task": "Pide un nombre de archivo e imprime su tipo MIME (.gif, .jpg/.jpeg, .png, .pdf, .txt, .zip); si no coincide, `application/octet-stream`. Ignora espacios y mayúsculas. Archivo `extensions.py`.", "hints": ["Normaliza con `.strip().lower()`.", "Usa `endswith` (o `match`) y deja el default al final."]}, {"name": "Math Interpreter", "url": "https://cs50.harvard.edu/python/psets/1/interpreter/", "task": "Lee `x y z` (ej. `1 + 1`, con y en + - * /) e imprime el resultado como float con un decimal (`2.0`). Archivo `interpreter.py`.", "hints": ["`x, y, z = expr.split(\" \")` separa en tres partes; convierte x y z a `int`.", "Usa `if`/`elif` (o `match`) sobre el operador y formatea con `f\"{r:.1f}\"`."]}, {"name": "Meal Time", "url": "https://cs50.harvard.edu/python/psets/1/meal/", "task": "Pide una hora 24h (`7:30`) e imprime `breakfast time` (7:00-8:00), `lunch time` (12:00-13:00) o `dinner time` (18:00-19:00); en otro caso nada. Archivo `meal.py`.", "hints": ["Debes definir `main()` y `convert(time)`; `convert` recibe un str y devuelve horas como float (`\"7:30\"` -> `7.5`).", "Termina el archivo con `if __name__ == \"__main__\": main()` para que check50 pruebe `convert`."]}], "practice": [{"name": "Categoría de gasto", "prompt": "Pide un comercio con `input(\"Comercio: \")`. Si es starbucks o tambo imprime `comida`; si es uber o cabify imprime `transporte`; si no, `otros`. Ignora mayúsculas y espacios.", "starter": "def main():\n    ...\n\n\nmain()\n", "tests": [{"stdin": [" Starbucks "], "expect": "comida"}, {"stdin": ["UBER"], "expect": "transporte"}, {"stdin": ["Saga"], "expect": "otros"}]}, {"name": "¿Es par?", "prompt": "Escribe `is_even(n)` que devuelva `True` o `False`, en una sola línea de return.", "starter": "def is_even(n):\n    ...\n", "tests": [{"code": "print(is_even(4))", "expect": "True"}, {"code": "print(is_even(7))", "expect": "False"}]}, {"name": "Semáforo de gasto", "prompt": "Pide un monto entero con `input(\"Monto: \")`. Menos de 50 → `bajo`, de 50 a 199 → `medio`, 200 o más → `alto`.", "starter": "def main():\n    ...\n\n\nmain()\n", "tests": [{"stdin": ["20"], "expect": "bajo"}, {"stdin": ["50"], "expect": "medio"}, {"stdin": ["200"], "expect": "alto"}]}], "project": {"goal": "Tu tracker ya **clasifica** el gasto.", "steps": ["Escribe `categorize(comercio)` que devuelva comida, transporte u otros según reglas tuyas.", "Agrega un aviso si el monto pasa de S/ 200.", "Prueba con 5 comercios reales de tu estado de cuenta."]}, "sources": ["https://cs50.harvard.edu/python/notes/1/", "https://cs50.harvard.edu/python/psets/1/deep/", "https://cs50.harvard.edu/python/psets/1/bank/", "https://cs50.harvard.edu/python/psets/1/extensions/", "https://cs50.harvard.edu/python/psets/1/interpreter/", "https://cs50.harvard.edu/python/psets/1/meal/"]}
+{
+ "week": 1,
+ "title": "Condicionales",
+ "time": "lectura 20 min · práctica 2–3 h",
+ "topics": [
+  "if / elif / else",
+  "Operadores de comparación",
+  "or · and",
+  "Módulo %",
+  "Funciones que devuelven bool",
+  "match / case"
+ ],
+ "notesUrl": "https://cs50.harvard.edu/python/notes/1/",
+ "videoUrl": "https://cs50.harvard.edu/python/weeks/1/",
+ "summary": [
+  "Los **condicionales** dejan que el programa haga preguntas y elija qué líneas correr: son \"bifurcaciones en el camino\" (forks in the road).",
+  "Operadores de comparación: `>`, `>=`, `<`, `<=`, `==` y `!=`. Ojo: `=` **asigna** y `==` **compara**.",
+  "`if` necesita **dos puntos e indentación** (no hay llaves). David dibuja **diagramas de flujo** para ver el *control flow*.",
+  "En `compare.py`, tres `if` sueltos hacen las tres preguntas siempre. Con `elif` se deja de preguntar en cuanto una es verdadera, y `else` cubre el último caso sin hacer otra pregunta.",
+  "`or` junta preguntas (`x < y or x > y`), pero es mejor diseño preguntar una sola vez: `x != y`.",
+  "`and` y las comparaciones encadenadas (`90 <= score <= 100`) en `grade.py`. Después lo simplifica a `score >= 90`, `>= 80`…, porque con `elif` el rango ya está implícito.",
+  "`%` (módulo) da el resto: `x % 2 == 0` significa par (`parity.py`).",
+  "Tus propias funciones pueden devolver un **bool** (`True`/`False`, con mayúscula): `is_even(n)`. El paso final es la versión **pythonic**: `return n % 2 == 0`.",
+  "`match` / `case` en `house.py`: compara un valor con varios casos, `|` junta valores en un mismo `case` y `case _:` atrapa todo lo demás (como `else`)."
+ ],
+ "jsToPy": [
+  {
+   "js": "if (x > 0) { } else if (x < 0) { } else { }",
+   "py": "if x > 0:\n    ...\nelif x < 0:\n    ...\nelse:\n    ...",
+   "note": "`elif`, no `else if`; dos puntos e indentación"
+  },
+  {
+   "js": "&&  ||",
+   "py": "and  or",
+   "note": "Se escriben en inglés"
+  },
+  {
+   "js": "true / false",
+   "py": "True / False",
+   "note": "Con mayúscula (tipo `bool`)"
+  },
+  {
+   "js": "x === y  /  x !== y",
+   "py": "x == y  /  x != y",
+   "note": "No existe `===`"
+  },
+  {
+   "js": "90 <= s && s <= 100",
+   "py": "90 <= s <= 100",
+   "note": "Comparación encadenada"
+  },
+  {
+   "js": "x % 2 === 0",
+   "py": "x % 2 == 0",
+   "note": "Módulo: resto de la división"
+  },
+  {
+   "js": "return cond ? true : false",
+   "py": "return True if cond else False",
+   "note": "Paso intermedio; lo pythonic es `return cond`"
+  },
+  {
+   "js": "switch (x) { case \"a\": ... default: ... }",
+   "py": "match x:\n    case \"a\":\n        ...\n    case _:",
+   "note": "`case _:` es el default"
+  },
+  {
+   "js": "case \"a\": case \"b\":",
+   "py": "case \"a\" | \"b\":",
+   "note": "`|` junta varios valores en un caso"
+  }
+ ],
+ "examples": [
+  {
+   "label": "compare.py — versión final (una sola pregunta):",
+   "code": "x = int(input(\"What's x? \"))\ny = int(input(\"What's y? \"))\n\nif x == y:\n    print(\"x is equal to y\")\nelse:\n    print(\"x is not equal to y\")"
+  },
+  {
+   "label": "grade.py — versión con menos preguntas:",
+   "code": "score = int(input(\"Score: \"))\n\nif score >= 90:\n    print(\"Grade: A\")\nelif score >= 80:\n    print(\"Grade: B\")\nelif score >= 70:\n    print(\"Grade: C\")\nelif score >= 60:\n    print(\"Grade: D\")\nelse:\n    print(\"Grade: F\")"
+  },
+  {
+   "label": "parity.py — versión pythonic final:",
+   "code": "def main():\n    x = int(input(\"What's x? \"))\n    if is_even(x):\n        print(\"Even\")\n    else:\n        print(\"Odd\")\n\n\ndef is_even(n):\n    return n % 2 == 0\n\n\nmain()"
+  },
+  {
+   "label": "house.py — `match` con `|` y `_`:",
+   "code": "name = input(\"What's your name? \")\n\nmatch name:\n    case \"Harry\" | \"Hermione\" | \"Ron\":\n        print(\"Gryffindor\")\n    case \"Draco\":\n        print(\"Slytherin\")\n    case _:\n        print(\"Who?\")"
+  }
+ ],
+ "traps": [
+  "Escribir `if x = y:` en vez de `==`: David lo corrige en vivo, porque `=` asigna y no compara.",
+  "Varios `if` sueltos hacen **todas** las preguntas aunque ya tengas la respuesta: es correcto, pero es peor diseño.",
+  "En `grade.py` con `if` sueltos y rangos que se pisan, un 95 imprime varias notas. `elif` hace que los casos se excluyan entre sí.",
+  "Si te olvidas los dos puntos o la indentación, Python no corre el programa.",
+  "Llamar `is_even(x)` en `main` antes de escribir la función rompe el programa hasta que la defines (David lo hace a propósito: primero la llama, luego la escribe)."
+ ],
+ "quiz": [
+  {
+   "q": "En la primera versión de `compare.py` (tres `if` sueltos), si `x < y`, ¿cuántas preguntas se hacen?",
+   "options": [
+    "1",
+    "2",
+    "3",
+    "Ninguna"
+   ],
+   "answer": 2,
+   "why": "Los `if` sueltos se revisan todos. Con `elif` se deja de preguntar tras el primero verdadero."
+  },
+  {
+   "q": "¿Por qué David cambia `if x < y or x > y` por `if x != y`?",
+   "options": [
+    "Porque `or` no existe",
+    "Para hacer una sola pregunta (mejor diseño)",
+    "Porque da otro resultado",
+    "Por velocidad de la terminal"
+   ],
+   "answer": 1,
+   "why": "Ambas son correctas, pero una sola pregunta es más simple: diseño, no corrección."
+  },
+  {
+   "q": "En `grade.py` final, ¿por qué basta `elif score >= 80`?",
+   "options": [
+    "Porque `elif` solo se revisa si `score >= 90` fue falso",
+    "Porque Python redondea",
+    "Porque 80 es el mínimo",
+    "No basta, es un bug"
+   ],
+   "answer": 0,
+   "why": "Al llegar al `elif` ya sabes que el score es menor a 90, así que el rango está implícito."
+  },
+  {
+   "q": "¿Cuál es la versión pythonic final de `is_even`?",
+   "options": [
+    "`if n % 2 == 0: return True`",
+    "`return True if n % 2 == 0 else False`",
+    "`return n % 2 == 0`",
+    "`return n / 2 == 0`"
+   ],
+   "answer": 2,
+   "why": "La comparación ya es un bool; se lee casi como inglés."
+  },
+  {
+   "q": "¿Qué hace `case _:` en un `match`?",
+   "options": [
+    "Error",
+    "Atrapa cualquier valor (como else)",
+    "Ignora el match",
+    "Repite el último caso"
+   ],
+   "answer": 1,
+   "why": "`_` es el comodín: coincide con todo lo que no coincidió antes."
+  }
+ ],
+ "submit": "Prueba con `check50` y envía con `submit50` (el comando exacto está en cada enunciado). Plazo del ciclo: **31 dic 2026**.",
+ "pset": [
+  {
+   "name": "Deep Thought",
+   "url": "https://cs50.harvard.edu/python/psets/1/deep/",
+   "task": "Pregunta por la respuesta a la vida, el universo y todo; imprime `Yes` si es `42`, `forty-two` o `forty two` (ignorando espacios y mayúsculas) y `No` en otro caso. Archivo `deep.py`.",
+   "hints": [
+    "Puedes comparar con el texto `\"42\"` sin convertir a int.",
+    "Normaliza con `.strip().lower()` y combina opciones con `or`."
+   ]
+  },
+  {
+   "name": "Home Federal Savings Bank",
+   "url": "https://cs50.harvard.edu/python/psets/1/bank/",
+   "task": "Pide un saludo (ignora espacios al inicio y mayúsculas): empieza con \"hello\" imprime `$0`; con \"h\" (pero no \"hello\") `$20`; otro caso `$100`. Archivo `bank.py`.",
+   "hints": [
+    "Usa los métodos de str, por ejemplo `startswith`.",
+    "Revisa \"hello\" antes que \"h\": el orden de `if`/`elif` importa."
+   ]
+  },
+  {
+   "name": "File Extensions",
+   "url": "https://cs50.harvard.edu/python/psets/1/extensions/",
+   "task": "Pide un nombre de archivo e imprime su tipo MIME (.gif, .jpg/.jpeg, .png, .pdf, .txt, .zip); si no coincide, `application/octet-stream`. Ignora espacios y mayúsculas. Archivo `extensions.py`.",
+   "hints": [
+    "Normaliza con `.strip().lower()`.",
+    "Usa `endswith` (o `match`) y deja el default al final."
+   ]
+  },
+  {
+   "name": "Math Interpreter",
+   "url": "https://cs50.harvard.edu/python/psets/1/interpreter/",
+   "task": "Lee `x y z` (ej. `1 + 1`, con y en + - * /) e imprime el resultado como float con un decimal (`2.0`). Archivo `interpreter.py`.",
+   "hints": [
+    "`x, y, z = expr.split(\" \")` separa en tres partes; convierte x y z a `int`.",
+    "Usa `if`/`elif` (o `match`) sobre el operador y formatea con `f\"{r:.1f}\"`."
+   ]
+  },
+  {
+   "name": "Meal Time",
+   "url": "https://cs50.harvard.edu/python/psets/1/meal/",
+   "task": "Pide una hora 24h (`7:30`) e imprime `breakfast time` (7:00-8:00), `lunch time` (12:00-13:00) o `dinner time` (18:00-19:00); en otro caso nada. Archivo `meal.py`.",
+   "hints": [
+    "Debes definir `main()` y `convert(time)`; `convert` recibe un str y devuelve horas como float (`\"7:30\"` -> `7.5`).",
+    "Termina el archivo con `if __name__ == \"__main__\": main()` para que check50 pruebe `convert`."
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "name": "Categoría de gasto",
+   "prompt": "Pide un comercio con `input(\"Comercio: \")`. Si es starbucks o tambo imprime `comida`; si es uber o cabify imprime `transporte`; si no, `otros`. Ignora mayúsculas y espacios.",
+   "starter": "def main():\n    ...\n\n\nmain()\n",
+   "tests": [
+    {
+     "stdin": [
+      " Starbucks "
+     ],
+     "expect": "comida"
+    },
+    {
+     "stdin": [
+      "UBER"
+     ],
+     "expect": "transporte"
+    },
+    {
+     "stdin": [
+      "Saga"
+     ],
+     "expect": "otros"
+    }
+   ]
+  },
+  {
+   "name": "¿Es par?",
+   "prompt": "Escribe `is_even(n)` que devuelva `True` o `False`, en una sola línea de return.",
+   "starter": "def is_even(n):\n    ...\n",
+   "tests": [
+    {
+     "code": "print(is_even(4))",
+     "expect": "True"
+    },
+    {
+     "code": "print(is_even(7))",
+     "expect": "False"
+    }
+   ]
+  },
+  {
+   "name": "Semáforo de gasto",
+   "prompt": "Pide un monto entero con `input(\"Monto: \")`. Menos de 50 → `bajo`, de 50 a 199 → `medio`, 200 o más → `alto`.",
+   "starter": "def main():\n    ...\n\n\nmain()\n",
+   "tests": [
+    {
+     "stdin": [
+      "20"
+     ],
+     "expect": "bajo"
+    },
+    {
+     "stdin": [
+      "50"
+     ],
+     "expect": "medio"
+    },
+    {
+     "stdin": [
+      "200"
+     ],
+     "expect": "alto"
+    }
+   ]
+  }
+ ],
+ "project": {
+  "goal": "Tu tracker ya **clasifica** el gasto.",
+  "steps": [
+   "Escribe `categorize(comercio)` que devuelva comida, transporte u otros según reglas tuyas.",
+   "Agrega un aviso si el monto pasa de S/ 200.",
+   "Prueba con 5 comercios reales de tu estado de cuenta."
+  ]
+ },
+ "sources": [
+  "https://cs50.harvard.edu/python/notes/1/",
+  "https://cs50.harvard.edu/python/psets/1/deep/",
+  "https://cs50.harvard.edu/python/psets/1/bank/",
+  "https://cs50.harvard.edu/python/psets/1/extensions/",
+  "https://cs50.harvard.edu/python/psets/1/interpreter/",
+  "https://cs50.harvard.edu/python/psets/1/meal/",
+  "https://cdn.cs50.net/python/2022/x/lectures/1/lang/en/lecture1.txt",
+  "https://cdn.cs50.net/python/2022/x/lectures/1/lang/en/lecture1.srt"
+ ],
+ "tips": [
+  "Que el código funcione (**correctness**) no significa que esté bien diseñado (**design**): busca código simple, legible y fácil de mantener.",
+  "**Haz menos preguntas**: `elif` y `else` evitan comprobaciones innecesarias, y una sola condición (`!=`) es mejor que dos con `or`.",
+  "Menos líneas = menos chances de equivocarte y más fácil de leer para otros.",
+  "**Pythonic**: `return n % 2 == 0` en vez de un `if/else` que devuelve `True`/`False`."
+ ],
+ "shorts": [
+  {
+   "title": "Conditionals",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "Boolean Expressions",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  }
+ ],
+ "transcriptUrl": "https://cdn.cs50.net/python/2022/x/lectures/1/lang/en/lecture1.txt"
+}

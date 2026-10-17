@@ -1,1 +1,277 @@
-{"week": 8, "title": "Programación orientada a objetos", "time": "lectura 35 min · práctica 3–4 h", "topics": ["class · __init__", "raise · ValueError", "__str__", "@property · setter", "@classmethod", "herencia · super()", "__add__"], "notesUrl": "https://cs50.harvard.edu/python/notes/8/", "videoUrl": "https://cs50.harvard.edu/python/weeks/8/", "summary": ["Una clase es un molde; cada objeto creado con ella es una instancia. `type(x)` te dice de qué clase es.", "`__init__(self, ...)` es el constructor; `self` es el `this` de JS y **siempre** es el primer parámetro.", "`raise ValueError(\"...\")` corta la ejecución: valida en `__init__` y lanza error si los datos no sirven.", "`__str__` define cómo se ve el objeto al hacer `print`.", "`@property` + `@x.setter` son getters y setters; el valor real se guarda en `self._x` (guion bajo = \"privado\" por convención).", "`@classmethod` recibe la clase (`cls`) en vez de la instancia: sirve p. ej. como constructor alterno `Student.get()`. `@staticmethod` solo se menciona.", "Herencia: `class Student(Wizard):` y `super().__init__(name)` para reutilizar el `__init__` del padre.", "Todas las excepciones heredan de `BaseException`/`Exception` (`ValueError`, `KeyError`, ...). Operadores propios: `__add__` define `a + b`."], "jsToPy": [{"js": "class A { constructor(x) { this.x = x } }", "py": "class A:\n    def __init__(self, x):\n        self.x = x", "note": ""}, {"js": "this.x", "py": "self.x", "note": "`self` explícito en cada método"}, {"js": "new A(1)", "py": "A(1)", "note": "Sin `new`"}, {"js": "toString()", "py": "__str__(self)", "note": "Lo usa `print`"}, {"js": "get x() / set x(v)", "py": "@property / @x.setter", "note": "Guarda en `self._x`"}, {"js": "static m()", "py": "@classmethod", "note": "Recibe `cls`; `@staticmethod` solo se menciona en clase"}, {"js": "class B extends A", "py": "class B(A):", "note": "Y `super().__init__(...)`"}, {"js": "throw new Error(\"x\")", "py": "raise ValueError(\"x\")", "note": ""}], "examples": [{"label": "Clase Student con validación, __str__ y @classmethod (de la clase):", "code": "class Student:\n    def __init__(self, name, house):\n        if not name:\n            raise ValueError(\"Missing name\")\n        if house not in [\"Gryffindor\", \"Hufflepuff\", \"Ravenclaw\", \"Slytherin\"]:\n            raise ValueError(\"Invalid house\")\n        self.name = name\n        self.house = house\n\n    def __str__(self):\n        return f\"{self.name} from {self.house}\"\n\n    @classmethod\n    def get(cls):\n        name = input(\"Name: \")\n        house = input(\"House: \")\n        return cls(name, house)\n\n\ndef main():\n    student = Student.get()\n    print(student)\n\n\nif __name__ == \"__main__\":\n    main()"}, {"label": "@property con setter (house):", "code": "class Student:\n    def __init__(self, name, house):\n        self.name = name\n        self.house = house\n\n    @property\n    def house(self):\n        return self._house\n\n    @house.setter\n    def house(self, house):\n        if house not in [\"Gryffindor\", \"Hufflepuff\", \"Ravenclaw\", \"Slytherin\"]:\n            raise ValueError(\"Invalid house\")\n        self._house = house"}, {"label": "Herencia con super():", "code": "class Wizard:\n    def __init__(self, name):\n        if not name:\n            raise ValueError(\"Missing name\")\n        self.name = name\n\n\nclass Student(Wizard):\n    def __init__(self, name, house):\n        super().__init__(name)\n        self.house = house"}], "traps": ["Olvidar `self` como primer parámetro de un método da `TypeError`.", "Con `@property` guarda el valor en `self._house` (con guion bajo); si usas el mismo nombre, se llama a sí mismo sin fin.", "Sin `@property`, nada impide `student.house = \"Number Four, Privet Drive\"`: la validación solo corre en `__init__`.", "Una tupla es inmutable: `student[1] = ...` da error; usa lista o dict si necesitas cambiar valores.", "En una subclase llama a `super().__init__(...)`, si no el padre no inicializa sus atributos."], "quiz": [{"q": "¿Qué es `self`?", "options": ["Una palabra reservada", "La instancia actual", "La clase", "El módulo"], "answer": 1, "why": "Es el `this` de JS, pero explícito como primer parámetro."}, {"q": "¿Qué método usa `print(obj)` para mostrar el objeto?", "options": ["__init__", "__str__", "__print__", "toString"], "answer": 1, "why": "`__str__` devuelve el texto que se muestra."}, {"q": "¿Qué recibe un método con `@classmethod`?", "options": ["La instancia (`self`)", "La clase (`cls`)", "Nada", "El módulo"], "answer": 1, "why": "Recibe `cls`; por eso `return cls(name, house)` crea una instancia."}, {"q": "¿Cómo llamas al constructor del padre en una subclase?", "options": ["parent.init()", "super().__init__(...)", "self.__init__()", "extends()"], "answer": 1, "why": "`super()` da acceso a la clase padre."}, {"q": "¿Qué define `__add__`?", "options": ["Qué hace `a + b` entre objetos", "Cómo se imprime", "El constructor", "Un getter"], "answer": 0, "why": "Es sobrecarga de operadores; en la clase `Vault + Vault` devuelve un nuevo `Vault`."}], "submit": "Prueba con `check50` y envía con `submit50` (el comando exacto está en cada enunciado). Plazo del ciclo: **31 dic 2026**.", "pset": [{"name": "Seasons of Love", "url": "https://cs50.harvard.edu/python/psets/8/seasons/", "task": "En `seasons.py` pide una fecha YYYY-MM-DD, calcula los minutos desde esa fecha hasta hoy (redondeados) y escríbelos en palabras en inglés, sin \"and\"; si la fecha es inválida, `sys.exit`.", "hints": ["`datetime.date.today()` y restar dos `date` da un `timedelta` con `.days`; multiplica por 24 × 60.", "`inflect` convierte números a palabras (`pip install inflect`).", "Escribe `test_seasons.py` para cada función que no sea `main`."]}, {"name": "CS50 Shirtificate", "url": "https://cs50.harvard.edu/python/psets/8/shirtificate/", "task": "En `shirtificate.py` pide el nombre y genera `shirtificate.pdf` (A4, vertical) con \"CS50 Shirtificate\" arriba, la imagen `shirtificate.png` centrada y tu nombre en blanco sobre la camiseta, con fpdf2.", "hints": ["`pip install fpdf2`; la clase `FPDF` trae los métodos y puedes heredar de ella para el encabezado.", "`set_auto_page_break` en falso para mantener todo en una página.", "Una celda puede tener alto negativo para subir."]}, {"name": "Cookie Jar", "url": "https://cs50.harvard.edu/python/psets/8/jar/", "task": "En `jar.py` define la clase `Jar` con `__init__(self, capacity=12)`, `__str__`, `deposit(self, n)`, `withdraw(self, n)` y properties `capacity` y `size`; escribe `test_jar.py`.", "hints": ["`@property` para `capacity` y `size`; `size` empieza en 0.", "Lanza `ValueError` si `capacity` no es un int no negativo, si `deposit` pasa la capacidad o si `withdraw` saca más de lo que hay.", "`__str__` devuelve un 🍪 por galleta; `test_jar.py` con 4+ funciones `test_` importando `from jar import Jar`."]}], "practice": [{"name": "Clase Movimiento", "prompt": "Crea `Movimiento(comercio, monto)`. Lanza `ValueError` si el monto es negativo. `print` debe mostrar `Starbucks: S/ 18.90`.", "starter": "class Movimiento:\n    def __init__(self, comercio, monto):\n        ...\n\n    def __str__(self):\n        ...\n", "tests": [{"code": "print(Movimiento(\"Starbucks\", 18.9))", "expect": "Starbucks: S/ 18.90"}, {"code": "try:\n    Movimiento(\"X\", -1)\n    print(\"no lanzó\")\nexcept ValueError:\n    print(\"ok\")", "expect": "ok"}]}, {"name": "Billetera", "prompt": "Crea `Wallet` con `deposit(n)`, `withdraw(n)` y una property `balance` de solo lectura. `withdraw` lanza `ValueError` si no alcanza.", "starter": "class Wallet:\n    def __init__(self):\n        self._balance = 0\n", "tests": [{"code": "w = Wallet()\nw.deposit(100)\nw.withdraw(30)\nprint(w.balance)", "expect": "70"}, {"code": "w = Wallet()\ntry:\n    w.withdraw(1)\n    print(\"no lanzó\")\nexcept ValueError:\n    print(\"ok\")", "expect": "ok"}]}], "project": {"goal": "Tu tracker ya usa **clases**.", "steps": ["Cambia los dicts por objetos `Movimiento`.", "Agrega `@classmethod from_csv_row(cls, row)` que cree un Movimiento desde una fila del CSV.", "Crea una clase `Resumen` que reciba una lista de movimientos y tenga `total()` y `por_categoria()`."]}, "sources": ["https://cs50.harvard.edu/python/notes/8/", "https://cs50.harvard.edu/python/psets/8/seasons/", "https://cs50.harvard.edu/python/psets/8/shirtificate/", "https://cs50.harvard.edu/python/psets/8/jar/"]}
+{
+ "week": 8,
+ "title": "Programación orientada a objetos",
+ "time": "lectura 35 min · práctica 3–4 h",
+ "topics": [
+  "class · __init__",
+  "raise · ValueError",
+  "__str__",
+  "@property · setter",
+  "@classmethod",
+  "herencia · super()",
+  "__add__"
+ ],
+ "notesUrl": "https://cs50.harvard.edu/python/notes/8/",
+ "videoUrl": "https://cs50.harvard.edu/python/weeks/8/",
+ "summary": [
+  "David parte de lo que ya conoces, la programación **procedural**, con `student.py`: `get_name()` y `get_house()`, luego `get_student()` que hace `return name, house`. Eso es una \"white lie\": en realidad devuelve **una tupla**.",
+  "Tupla vs lista vs dict: la tupla es **inmutable**, así que `student[1] = \"Ravenclaw\"` (el caso de Padma) da `TypeError`. Con lista sí se puede, y con dict (`student[\"name\"]`) el código se lee mejor que con índices.",
+  "Una **clase** es un \"molde\" para crear tu propio tipo de dato, y cada `Student(...)` es un **objeto** (instancia). Los atributos (variables de instancia) se leen con punto: `student.name`.",
+  "`__init__(self, name, house)` inicializa el objeto. `self` es el objeto que se está creando y siempre va como primer parámetro de los métodos.",
+  "Validación dentro de la clase: `raise ValueError(\"Missing name\")` / `\"Invalid house\"` en vez de `sys.exit` o devolver `None`. `__str__` define qué muestra `print(student)`; sin él sale algo como `<__main__.Student object at 0x...>`. También existe `__repr__` (para devs).",
+  "Puedes crear tus propios métodos (p. ej. `charm()`, que devuelve el emoji del patronus). Como `student.house = \"Number Four, Privet Drive\"` se salta la validación del `__init__`, aparecen las **properties**: `@property` (getter) + `@house.setter` (setter), con el valor guardado en `self._house`.",
+  "El `_` es solo una **convención** (\"please don't touch this\"): `student._house = ...` igual funciona. Además, `int`, `str`, `list` y `dict` también son clases: `type(50)`, `type([])`, `list()` == `[]`.",
+  "`@classmethod` recibe `cls` en vez de `self`, y las **variables de clase** son compartidas: `hat.py` con `Hat.houses` y `Hat.sort(\"Harry\")` (solo hay un sombrero). Después `get_student` pasa a ser `Student.get()`, que devuelve `cls(name, house)`. `@staticmethod` solo se menciona.",
+  "**Herencia** en `wizard.py`: `class Student(Wizard):` + `super().__init__(name)`, y lo mismo para `Professor`. Las excepciones también forman una jerarquía (`BaseException` → `Exception` → `ValueError`, ...). **Sobrecarga de operadores** en `vault.py`: `__add__` hace que `potter + weasley` funcione."
+ ],
+ "jsToPy": [
+  {
+   "js": "class A { constructor(x) { this.x = x } }",
+   "py": "class A:\n    def __init__(self, x):\n        self.x = x",
+   "note": ""
+  },
+  {
+   "js": "this.x",
+   "py": "self.x",
+   "note": "`self` va explícito en cada método"
+  },
+  {
+   "js": "new A(1)",
+   "py": "A(1)",
+   "note": "Sin `new`"
+  },
+  {
+   "js": "toString()",
+   "py": "__str__(self)",
+   "note": "Lo usa `print`"
+  },
+  {
+   "js": "get x() / set x(v)",
+   "py": "@property / @x.setter",
+   "note": "Guarda en `self._x`"
+  },
+  {
+   "js": "#x (privado)",
+   "py": "self._x",
+   "note": "Solo es convención; Python no lo impide"
+  },
+  {
+   "js": "static m() / static props",
+   "py": "@classmethod + variable de clase",
+   "note": "Recibe `cls`; `@staticmethod` solo se menciona"
+  },
+  {
+   "js": "class B extends A / super(x)",
+   "py": "class B(A): / super().__init__(x)",
+   "note": ""
+  },
+  {
+   "js": "throw new Error(\"x\")",
+   "py": "raise ValueError(\"x\")",
+   "note": ""
+  },
+  {
+   "js": "Object.freeze([a, b])",
+   "py": "(a, b)",
+   "note": "La tupla es inmutable"
+  }
+ ],
+ "examples": [
+  {
+   "label": "student.py — versión con @property (de clase):",
+   "code": "class Student:\n    def __init__(self, name, house):\n        self.name = name\n        self.house = house\n\n    def __str__(self):\n        return f\"{self.name} from {self.house}\"\n\n    # Getter for name\n    @property\n    def name(self):\n        return self._name\n\n    # Setter for name\n    @name.setter\n    def name(self, name):\n        if not name:\n            raise ValueError(\"Invalid name\")\n        self._name = name\n\n    @property\n    def house(self):\n        return self._house\n\n    @house.setter\n    def house(self, house):\n        if house not in [\"Gryffindor\", \"Hufflepuff\", \"Ravenclaw\", \"Slytherin\"]:\n            raise ValueError(\"Invalid house\")\n        self._house = house\n\n\ndef main():\n    student = get_student()\n    print(student)\n\n\ndef get_student():\n    name = input(\"Name: \")\n    house = input(\"House: \")\n    return Student(name, house)\n\n\nif __name__ == \"__main__\":\n    main()"
+  },
+  {
+   "label": "hat.py — variable de clase y @classmethod:",
+   "code": "import random\n\n\nclass Hat:\n\n    houses = [\"Gryffindor\", \"Hufflepuff\", \"Ravenclaw\", \"Slytherin\"]\n\n    @classmethod\n    def sort(cls, name):\n        print(name, \"is in\", random.choice(cls.houses))\n\n\nHat.sort(\"Harry\")"
+  },
+  {
+   "label": "wizard.py — herencia con super():",
+   "code": "class Wizard:\n    def __init__(self, name):\n        if not name:\n            raise ValueError(\"Missing name\")\n        self.name = name\n\n    ...\n\n\nclass Student(Wizard):\n    def __init__(self, name, house):\n        super().__init__(name)\n        self.house = house\n\n    ...\n\n\nclass Professor(Wizard):\n    def __init__(self, name, subject):\n        super().__init__(name)\n        self.subject = subject\n\n    ...\n\n\nwizard = Wizard(\"Albus\")\nstudent = Student(\"Harry\", \"Gryffindor\")\nprofessor = Professor(\"Severus\", \"Defense Against the Dark Arts\")\n..."
+  },
+  {
+   "label": "vault.py — sobrecarga de operadores con __add__:",
+   "code": "class Vault:\n    def __init__(self, galleons=0, sickles=0, knuts=0):\n        self.galleons = galleons\n        self.sickles = sickles\n        self.knuts = knuts\n\n    def __str__(self):\n        return f\"{self.galleons} Galleons, {self.sickles} Sickles, {self.knuts} Knuts\"\n\n    def __add__(self, other):\n        galleons = self.galleons + other.galleons\n        sickles = self.sickles + other.sickles\n        knuts = self.knuts + other.knuts\n        return Vault(galleons, sickles, knuts)\n\n\npotter = Vault(100, 50, 25)\nprint(potter)\n\nweasley = Vault(25, 50, 100)\nprint(weasley)\n\ntotal = potter + weasley\nprint(total)"
+  }
+ ],
+ "traps": [
+  "Las tuplas son inmutables: `student[1] = \"Ravenclaw\"` da `TypeError: 'tuple' object does not support item assignment`. David cambia a lista y luego a dict.",
+  "Comillas dobles dentro de un f-string con comillas dobles (`f\"{student[\"name\"]}\"`) da error de sintaxis en la versión de clase: usa comillas simples para la clave.",
+  "`print(student)` sin `__str__` muestra algo tipo `<__main__.Student object at 0x...>`, no tus datos.",
+  "La validación del `__init__` no protege una asignación posterior (`student.house = \"Number Four, Privet Drive\"`): para eso están los setters.",
+  "La property y el atributo no pueden llamarse igual: el valor real se guarda en `self._house`. En `__init__` asigna `self.house` (sin `_`) para que pase por el setter.",
+  "El `_` no es privado de verdad: `student._house = ...` se salta el setter. Es una convención, no algo que Python haga cumplir.",
+  "En `hat.py` faltaba `import random` → `NameError: name 'random' is not defined`."
+ ],
+ "quiz": [
+  {
+   "q": "Cuando `get_student()` hace `return name, house`, ¿qué devuelve en realidad?",
+   "options": [
+    "Dos valores separados",
+    "Una lista",
+    "Una tupla",
+    "Un dict"
+   ],
+   "answer": 2,
+   "why": "David lo llama una \"white lie\": la coma arma una sola tupla."
+  },
+  {
+   "q": "¿Qué pasa con `student[1] = \"Ravenclaw\"` si `student` es una tupla?",
+   "options": [
+    "Funciona",
+    "`TypeError`: las tuplas no soportan asignación por índice",
+    "`IndexError`",
+    "Se crea una lista nueva"
+   ],
+   "answer": 1,
+   "why": "Las tuplas son inmutables; por eso David pasa a lista y luego a dict."
+  },
+  {
+   "q": "Con `@property` en `house`, ¿qué pasa en `__init__` al hacer `self.house = house`?",
+   "options": [
+    "Se llama al setter y se valida",
+    "Se salta la validación",
+    "Da error de recursión",
+    "Crea una variable de clase"
+   ],
+   "answer": 0,
+   "why": "La asignación con punto pasa por `@house.setter`, que valida y guarda en `self._house`."
+  },
+  {
+   "q": "En `hat.py`, ¿por qué `houses` es variable de clase y `sort` es `@classmethod`?",
+   "options": [
+    "Porque es más rápido",
+    "Porque `random` lo exige",
+    "Porque las listas no pueden ir en `self`",
+    "Porque solo hay un sombrero: no hace falta crear instancias"
+   ],
+   "answer": 3,
+   "why": "Es el caso \"singleton\": `Hat.sort(\"Harry\")` usa `cls.houses`, compartido por la clase."
+  },
+  {
+   "q": "¿Qué permite `__add__` en `vault.py`?",
+   "options": [
+    "Imprimir el vault",
+    "Escribir `potter + weasley` y obtener un nuevo `Vault`",
+    "Heredar de `Vault`",
+    "Validar los galleons"
+   ],
+   "answer": 1,
+   "why": "Es sobrecarga de operadores: `+` llama a `potter.__add__(weasley)`."
+  }
+ ],
+ "submit": "Prueba con `check50` y envía con `submit50` (el comando exacto está en cada enunciado). Plazo del ciclo: **31 dic 2026**.",
+ "pset": [
+  {
+   "name": "Seasons of Love",
+   "url": "https://cs50.harvard.edu/python/psets/8/seasons/",
+   "task": "En `seasons.py` pide una fecha YYYY-MM-DD, calcula los minutos desde esa fecha hasta hoy (redondeados) y escríbelos en palabras en inglés, sin \"and\"; si la fecha es inválida, `sys.exit`.",
+   "hints": [
+    "`datetime.date.today()` y restar dos `date` da un `timedelta` con `.days`; multiplica por 24 × 60.",
+    "`inflect` convierte números a palabras (`pip install inflect`).",
+    "Escribe `test_seasons.py` para cada función que no sea `main`."
+   ]
+  },
+  {
+   "name": "CS50 Shirtificate",
+   "url": "https://cs50.harvard.edu/python/psets/8/shirtificate/",
+   "task": "En `shirtificate.py` pide el nombre y genera `shirtificate.pdf` (A4, vertical) con \"CS50 Shirtificate\" arriba, la imagen `shirtificate.png` centrada y tu nombre en blanco sobre la camiseta, con fpdf2.",
+   "hints": [
+    "`pip install fpdf2`; la clase `FPDF` trae los métodos y puedes heredar de ella para el encabezado.",
+    "`set_auto_page_break` en falso para mantener todo en una página.",
+    "Una celda puede tener alto negativo para subir."
+   ]
+  },
+  {
+   "name": "Cookie Jar",
+   "url": "https://cs50.harvard.edu/python/psets/8/jar/",
+   "task": "En `jar.py` define la clase `Jar` con `__init__(self, capacity=12)`, `__str__`, `deposit(self, n)`, `withdraw(self, n)` y properties `capacity` y `size`; escribe `test_jar.py`.",
+   "hints": [
+    "`@property` para `capacity` y `size`; `size` empieza en 0.",
+    "Lanza `ValueError` si `capacity` no es un int no negativo, si `deposit` pasa la capacidad o si `withdraw` saca más de lo que hay.",
+    "`__str__` devuelve un 🍪 por galleta; `test_jar.py` con 4+ funciones `test_` importando `from jar import Jar`."
+   ]
+  }
+ ],
+ "practice": [
+  {
+   "name": "Clase Movimiento",
+   "prompt": "Crea `Movimiento(comercio, monto)`. Lanza `ValueError` si el monto es negativo. `print` debe mostrar `Starbucks: S/ 18.90`.",
+   "starter": "class Movimiento:\n    def __init__(self, comercio, monto):\n        ...\n\n    def __str__(self):\n        ...\n",
+   "tests": [
+    {
+     "code": "print(Movimiento(\"Starbucks\", 18.9))",
+     "expect": "Starbucks: S/ 18.90"
+    },
+    {
+     "code": "try:\n    Movimiento(\"X\", -1)\n    print(\"no lanzó\")\nexcept ValueError:\n    print(\"ok\")",
+     "expect": "ok"
+    }
+   ]
+  },
+  {
+   "name": "Billetera",
+   "prompt": "Crea `Wallet` con `deposit(n)`, `withdraw(n)` y una property `balance` de solo lectura. `withdraw` lanza `ValueError` si no alcanza.",
+   "starter": "class Wallet:\n    def __init__(self):\n        self._balance = 0\n",
+   "tests": [
+    {
+     "code": "w = Wallet()\nw.deposit(100)\nw.withdraw(30)\nprint(w.balance)",
+     "expect": "70"
+    },
+    {
+     "code": "w = Wallet()\ntry:\n    w.withdraw(1)\n    print(\"no lanzó\")\nexcept ValueError:\n    print(\"ok\")",
+     "expect": "ok"
+    }
+   ]
+  }
+ ],
+ "project": {
+  "goal": "Tu tracker ya usa **clases**.",
+  "steps": [
+   "Cambia los dicts por objetos `Movimiento`.",
+   "Agrega `@classmethod from_csv_row(cls, row)` que cree un Movimiento desde una fila del CSV.",
+   "Crea una clase `Resumen` que reciba una lista de movimientos y tenga `total()` y `por_categoria()`."
+  ]
+ },
+ "sources": [
+  "https://cs50.harvard.edu/python/notes/8/",
+  "https://cs50.harvard.edu/python/psets/8/seasons/",
+  "https://cs50.harvard.edu/python/psets/8/shirtificate/",
+  "https://cs50.harvard.edu/python/psets/8/jar/",
+  "https://cdn.cs50.net/python/2022/x/lectures/8/lang/en/lecture8.txt"
+ ],
+ "tips": [
+  "Si los datos no deberían cambiar, prefiere una estructura **inmutable** (tupla): te protege de errores. Si hay muchos campos, mejor un dict o una clase que índices sueltos.",
+  "Pon la validación **dentro de la clase** (en el setter) y lanza excepciones con mensajes claros en vez de imprimir errores o hacer `sys.exit` desde lo profundo del programa.",
+  "No crees una clase si unas funciones simples resuelven el problema. Las clases valen la pena cuando el programa crece o cuando modelas entidades (estudiante, sombrero, bóveda).",
+  "Pon las listas de constantes (como las casas) arriba, en la clase o el archivo, para que se vean y se cambien fácil."
+ ],
+ "shorts": [
+  {
+   "title": "Classes",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "Instance Variables",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "Instance Methods",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "Class Methods and Class Variables",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  },
+  {
+   "title": "Tuples",
+   "url": "https://www.youtube.com/playlist?list=PLhQjrBD2T381eWtNm274cXo8zxUFX-lyn",
+   "confirmed": false
+  }
+ ],
+ "transcriptUrl": "https://cdn.cs50.net/python/2022/x/lectures/8/lang/en/lecture8.txt"
+}

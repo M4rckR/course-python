@@ -300,6 +300,13 @@ a.week-tab:hover{color:var(--ink);background:var(--surface-2)}
 .quiz-why{margin:0;padding:14px 18px;border-left:3px solid var(--ok);font-size:var(--fs-body-lg);line-height:var(--lh-body);text-wrap:pretty}
 .quiz-why[data-result="bad"]{border-left-color:var(--bad)}
 
+/* Shorts (§15) */
+.shorts{list-style:none;margin:0;padding:0}
+.short{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-3) 0;border-top:var(--border)}
+.short__title{font-size:var(--fs-ui);font-weight:var(--fw-bold);text-decoration:none}
+.short__title:hover{text-decoration:underline}
+.short[data-seen] .short__title{font-weight:var(--fw-regular);color:var(--ink-2);text-decoration:line-through}
+
 /* Problem set (1g fila 5) */
 .pset{display:flex;flex-direction:column}
 .pset-item__hit{display:none}
