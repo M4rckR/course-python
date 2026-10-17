@@ -140,6 +140,7 @@ function buildIndex(){
         el("span",{class:"section-index__num"},pad2(k+1)),el("span",{},s.short,d?el("span",{class:"visually-hidden"},", hecha"):null),
         count?el("span",{class:"section-index__count"},count):null));
     }))),
+    el("button",{class:"btn--secondary focus-toggle",type:"button",onclick:()=>enterFocus()},"Modo foco",el("kbd",{},"F")),
     weekLinks("week-links only-desktop"));
 }
 function buildBar(){
@@ -213,13 +214,19 @@ function buildSection(key){
   if(folded){
     const upcoming=!d;
     const right=upcoming?el("span",{class:"section-row__status"},sectionCount(key))
-      :el("span",{class:"section-row__status","data-ok":"true"},"✓ Hecho · ",el("span",{class:"section-row__open"},key==="quiz"?"repetir":"abrir"));
+      :el("span",{class:"section-row__status","data-ok":"true"},"✓ Hecho · ",el("span",{class:"section-row__open"},"abrir"));
     const sub=key==="project"?` — ${plainText(w.project.goal||"")}`:` · ${sectionCount(key)}`;
+    const open=()=>{openSections.add(key);const node=buildSection(key);document.getElementById("s-"+key).replaceWith(node);node.querySelector("h2")?.focus();refreshChrome()};
+    // Quiz hecho: "revisar" lo abre en solo lectura (respuestas bloqueadas); "repetir" borra las respuestas y lo reinicia
+    if(key==="quiz"&&d)return el("section",{class:"section-card",id:"s-quiz","data-state":"done"},
+      el("div",{class:"section-row section-row--split"},el("span",{class:"num"},n),el("span",{class:"section-row__title"},sectionTitle(key),el("span",{class:"section-row__sub"},sub)),
+        el("span",{class:"section-row__status","data-ok":"true"},"✓ Hecho · ",
+          el("button",{class:"section-row__action",type:"button","aria-expanded":"false","aria-controls":"s-quiz-body",onclick:open},"revisar",el("span",{class:"visually-hidden"}," el quiz")),
+          el("span",{class:"section-row__dot","aria-hidden":"true"}," · "),
+          el("button",{class:"section-row__action",type:"button",onclick:()=>{delete answers[current];store.set("cs50p-quiz",answers);open()}},"repetir",el("span",{class:"visually-hidden"}," el quiz (borra tus respuestas)")))));
     return el("section",{class:"section-card",id:"s-"+key,"data-state":upcoming?"upcoming":"done"},
-      el("button",{class:"section-row",type:"button","aria-expanded":"false","aria-controls":`s-${key}-body`,onclick:()=>{
-        if(key==="quiz"&&d){delete answers[current];store.set("cs50p-quiz",answers)}
-        openSections.add(key);const node=buildSection(key);document.getElementById("s-"+key).replaceWith(node);node.querySelector("h2")?.focus();refreshChrome();
-      }},el("span",{class:"num"},n),el("span",{class:"section-row__title"},sectionTitle(key),el("span",{class:"section-row__sub"},sub)),right));
+      el("button",{class:"section-row",type:"button","aria-expanded":"false","aria-controls":`s-${key}-body`,onclick:open},
+        el("span",{class:"num"},n),el("span",{class:"section-row__title"},sectionTitle(key),el("span",{class:"section-row__sub"},sub)),right));
   }
   const counter=key==="quiz"||key==="pset"?el("span",{class:"section-card__count"},sectionCount(key)):null;
   const head=cur&&!d
@@ -415,9 +422,10 @@ function renderWeek(){
   const head=el("header",{class:"week-head"},
     el("div",{class:"week-head__mobile only-mobile"},
       el("div",{class:"week-switch"},el("a",{href:"#/",class:"week-switch__back","aria-label":"Ir a Inicio"},"←"),el("span",{class:"week-switch__label","aria-hidden":"true"},`W${current} ▾`),select),
-      themeButton("theme-toggle theme-toggle--icon")),
+      el("div",{class:"week-head__actions"},el("button",{class:"btn--small focus-toggle--mobile",type:"button",onclick:()=>enterFocus()},"Foco"),themeButton("theme-toggle theme-toggle--icon"))),
     el("p",{class:"week-head__meta"},`Semana ${current} · ${w.time||""}`),
     el("h1",{class:"week-head__title"},w.title),
+    el("p",{class:"week-head__time only-mobile"},w.time||""),
     el("div",{class:"only-mobile"},segs(weekSegStates(current,sectionIdx(currentInView)+1))),
     weekLinks("week-links week-links--head below-desktop"));
   const sections=SECTIONS.filter(s=>s.has(w)).map(s=>buildSection(s.key));
@@ -444,6 +452,120 @@ async function runTest(code,t){
   const r=await runPy(src,t.stdin||[],t.code?1:0);
   return{...r,pass:!r.err&&r.out.trimEnd().endsWith(t.expect)};
 }
+// ── Modo foco (1c / 1f): un paso a la vez. 01–03, 06 y 07 = 1 paso; 04 = 1 por pregunta; 05 = 1 por ejercicio.
+let focusStep=0,focusSkipArmed=false;
+function focusSteps(){
+  const w=weeks[current],steps=[];
+  for(const s of SECTIONS){
+    if(!s.has(w))continue;
+    if(s.key==="quiz")w.quiz.forEach((_,q)=>steps.push({key:"quiz",sub:q,subs:w.quiz.length}));
+    else if(s.key==="practice")w.practice.forEach((_,j)=>steps.push({key:"practice",sub:j,subs:w.practice.length}));
+    else steps.push({key:s.key,sub:0,subs:1});
+  }
+  return steps;
+}
+const inFocus=()=>document.documentElement.dataset.mode==="focus";
+// Paso inicial: la sección actual de la vista de semana (pregunta sin responder / ejercicio seleccionado)
+function focusStartStep(){
+  const steps=focusSteps(),key=currentInView||SECTIONS[(firstOpenSection(current)??1)-1].key;
+  let sub=0;
+  if(key==="quiz")sub=Math.max(0,weeks[current].quiz.findIndex((_,q)=>(answers[current]||{})[q]==null));
+  if(key==="practice")sub=practiceSel??0;
+  const k=steps.findIndex(s=>s.key===key&&s.sub===sub);return k<0?0:k;
+}
+function enterFocus(step=focusStartStep()){
+  if(!weeks[current])return;
+  focusStep=step;document.documentElement.dataset.mode="focus";
+  sectionObserver?.disconnect();document.getElementById("main").textContent=""; // evita ids duplicados (editor) con la vista de semana
+  document.getElementById("focus").hidden=false;
+  renderFocus();
+}
+// Oculta el modo foco sin repintar la semana (lo usa el router)
+function leaveFocusView(){delete document.documentElement.dataset.mode;const f=document.getElementById("focus");f.hidden=true;f.textContent=""}
+function exitFocus(){
+  if(!inFocus())return;
+  const st=focusSteps()[focusStep];
+  delete document.documentElement.dataset.mode;delete prefs.focus;savePrefs();
+  const f=document.getElementById("focus");f.hidden=true;f.textContent="";
+  if(route().name==="week"){
+    if(st?.key==="practice")practiceSel=st.sub;
+    renderWeek();renderHeader(route());renderTabs();
+    const k=st?.key;if(k){currentInView=k;scrollToSection(k)}
+  }
+}
+function focusGo(step){
+  const steps=focusSteps();if(step<0||step>=steps.length)return;
+  focusStep=step;focusSkipArmed=false;renderFocus({animate:true});scrollTo(0,0);
+}
+function focusNext(){
+  const steps=focusSteps(),st=steps[focusStep];
+  // Quiz sin responder: el primer clic avisa, el segundo salta
+  if(st.key==="quiz"&&(answers[current]||{})[st.sub]==null&&!focusSkipArmed){
+    focusSkipArmed=true;const n=document.querySelector(".focus__hint");if(n)n.hidden=false;return;
+  }
+  // En 01, 02, 03 y 07 avanzar marca la sección como hecha
+  if(MANUAL.has(st.key)&&!sectionDone(current,st.key)){const wp=weekPrefs(current);wp.done??={};wp.done[st.key]=true;markStudied();setLast(current,sectionIdx(st.key)+1,0)}
+  if(focusStep===steps.length-1){exitFocus();return}
+  focusGo(focusStep+1);
+}
+function renderFocus({animate=false}={}){
+  const w=weeks[current],steps=focusSteps(),st=steps[focusStep],k=sectionIdx(st.key),s=SECTIONS[k];
+  prefs.focus={week:current,step:focusStep};savePrefs();
+  const secState=SECTIONS.map((x,i)=>i===k?"current":sectionDone(current,x.key)?"done":"pending");
+  const subDone=j=>st.key==="quiz"?(answers[current]||{})[j]!=null:st.key==="practice"?!!passed[`${current}-${j}`]:sectionDone(current,st.key);
+  const subTxt=st.key==="quiz"?`Pregunta ${st.sub+1} de ${st.subs}`:st.key==="practice"?`Ejercicio ${st.sub+1} de ${st.subs}`:"";
+  const f=document.getElementById("focus");f.textContent="";
+  const segBar=el("div",{class:"focus__segments","aria-hidden":"true"},secState.map(x=>el("span",{"data-s":x})));
+  const exit=el("button",{class:"btn--small focus__exit",type:"button",onclick:exitFocus},el("span",{class:"hide-mobile"},"Salir del foco"),el("span",{class:"only-mobile"},"✕ Salir"),el("kbd",{class:"hide-mobile"},"Esc"));
+  const pos=el("p",{class:"focus__pos"},el("span",{class:"hide-mobile"},`W${current} · ${pad2(k+1)} de 07`),el("span",{class:"only-mobile"},`${pad2(k+1)}/07`+(st.subs>1?` · ${st.sub+1} de ${st.subs}`:"")));
+  // Contenido del paso
+  const title=t=>el("h2",{class:"focus__title",tabindex:"-1"},t);
+  let body;
+  if(st.key==="quiz"){
+    const fs=quizQuestion(w.quiz[st.sub],st.sub);fs.classList.add("quiz-q--focus");
+    const lg=fs.querySelector("legend");lg.classList.add("focus__title");lg.tabIndex=-1;
+    fs.addEventListener("click",()=>setTimeout(paintFocusProgress,0));
+    body=[fs];
+  }else if(st.key==="practice"){
+    const p=w.practice[st.sub];
+    body=[title(`${st.sub+1} · ${p.name}`),...practicePanel(p,st.sub,paintFocusProgress)];
+  }else body=[title(sectionTitle(st.key)),...sectionBody(st.key)];
+  const prev=el("button",{class:"btn--ghost focus__prev",type:"button","aria-disabled":focusStep===0?"true":null,onclick:()=>{if(focusStep>0)focusGo(focusStep-1)}},"← Anterior");
+  const last=focusStep===steps.length-1;
+  const next=el("button",{class:"btn--primary focus__next",type:"button",onclick:focusNext},last?"Terminar":"Siguiente →");
+  const dots=el("div",{class:"focus__dots","aria-hidden":"true"},st.subs>1?[...Array(st.subs).keys()].map(j=>el("span",{"data-s":subDone(j)?"done":"pending","data-current":j===st.sub?"true":null})):null);
+  const step=el("div",{class:"focus__step"+(animate&&!reducedMotion()?" is-entering":"")},
+    el("div",{class:"focus__label"},el("span",{},s.short),el("span",{},subTxt)),...body);
+  f.append(
+    el("header",{class:"focus__head"},exit,segBar,pos),
+    el("div",{class:"focus__segments-mobile only-mobile","aria-hidden":"true"},secState.map(x=>el("span",{"data-s":x}))),
+    el("div",{class:"focus__content"},step),
+    el("footer",{class:"focus__foot"},el("div",{class:"focus__foot-inner"},
+      el("p",{class:"focus__hint",hidden:"","aria-live":"polite"},"Responde o pulsa otra vez para saltar"),
+      prev,dots,next)),
+    el("p",{class:"visually-hidden","aria-live":"polite"},`Paso ${focusStep+1} de ${steps.length}: ${s.title}${subTxt?", "+subTxt.toLowerCase():""}`));
+  if(animate&&!reducedMotion())requestAnimationFrame(()=>requestAnimationFrame(()=>step.classList.remove("is-entering")));
+  (step.querySelector(".focus__title"))?.focus({preventScroll:true});
+  function paintFocusProgress(){
+    dots.querySelectorAll("span").forEach((d,j)=>d.dataset.s=subDone(j)?"done":"pending");
+    segBar.querySelectorAll("span").forEach((d,i)=>{if(i!==k)d.dataset.s=sectionDone(current,SECTIONS[i].key)?"done":"pending"});
+    renderHeader(route());
+  }
+}
+// Teclado: F entra, Esc sale, ←/→ mueven, 1–4 responden. Nada de esto mientras se escribe (salvo Esc, que el editor usa para soltar el foco).
+const typing=t=>t&&(t.tagName==="TEXTAREA"||t.tagName==="INPUT"||t.tagName==="SELECT"||t.isContentEditable);
+addEventListener("keydown",e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey||typing(e.target))return;
+  if(!inFocus()){
+    if((e.key==="f"||e.key==="F")&&route().name==="week"&&weeks[current]){e.preventDefault();enterFocus()}
+    return;
+  }
+  if(e.key==="Escape"){e.preventDefault();exitFocus()}
+  else if(e.key==="ArrowRight"&&!e.target.closest?.("[role=tablist]")){e.preventDefault();focusNext()}
+  else if(e.key==="ArrowLeft"&&!e.target.closest?.("[role=tablist]")){e.preventDefault();focusGo(focusStep-1)}
+  else if(/^[1-4]$/.test(e.key)){const o=document.querySelectorAll("#focus .quiz-opt")[+e.key-1];if(o&&!o.disabled){e.preventDefault();o.click()}}
+});
+
 // ── Inicio
 const DAY_LETTERS=["L","M","X","J","V","S","D"];
 // Primera sección sin hacer de una semana (1–7), o null si está completa
@@ -555,16 +677,21 @@ function render(){
   if(r.name==="week"){
     if(current!==r.week){openSections=new Set();practiceSel=null}
     current=r.week;
-    renderWeek();
-    if(pendingScroll){const k=pendingScroll;pendingScroll=null;scrollToSection(k)}
-  }else{sectionObserver?.disconnect();renderHome()}
+    if(prefs.focus&&prefs.focus.week!==current){delete prefs.focus;savePrefs()}
+    if(prefs.focus&&weeks[current]){enterFocus(Math.min(prefs.focus.step,focusSteps().length-1))}
+    else{
+      if(inFocus())leaveFocusView();
+      renderWeek();
+      if(pendingScroll){const k=pendingScroll;pendingScroll=null;scrollToSection(k)}
+    }
+  }else{if(inFocus()){leaveFocusView();delete prefs.focus;savePrefs()}sectionObserver?.disconnect();renderHome()}
   renderHeader(r);renderTabs();
 }
 addEventListener("hashchange",()=>{
   if(!/^(#\/.*|#w\d|#?)$/.test(location.hash))return; // anclas internas (#main…) no cambian de vista
   const jump=!!pendingScroll;render();if(!jump)scrollTo(0,0);
 });
-document.querySelector(".skip-link").addEventListener("click",e=>{e.preventDefault();document.getElementById("main").focus()});
+document.querySelector(".skip-link").addEventListener("click",e=>{e.preventDefault();(inFocus()?document.querySelector("#focus .focus__title"):document.getElementById("main"))?.focus()});
 render();
 
 // Carga las 10 semanas desde data/w0.json … data/w9.json
