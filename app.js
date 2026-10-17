@@ -2,11 +2,14 @@ const WEEK_NAMES=["Functions, Variables","Conditionals","Loops","Exceptions","Li
 let weeks={}; let current=0;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let done=store.get("cs50p-done",{}); let answers=store.get("cs50p-quiz",{}); let passed=store.get("cs50p-passed",{}); let codes=store.get("cs50p-code",{});
+// Estado nuevo del rediseño (tema, última posición, días de estudio…). Las 4 claves de arriba no cambian.
+let prefs=store.get("cs50p:v1",{});
+const savePrefs=()=>store.set("cs50p:v1",prefs);
 try{const h=location.hash.match(/^#w(\d)$/);if(h)current=+h[1]}catch(e){}
 const el=(t,a={},...c)=>{const n=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==="class")n.className=v;else if(k==="html")n.innerHTML=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else n.setAttribute(k,v)}for(const x of c.flat()){if(x==null)continue;n.append(x.nodeType?x:document.createTextNode(x))}return n};
 // inline: `code` y **negrita**, escapando todo lo demás
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const md=s=>esc(s).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>");
+const md=s=>esc(s).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
 
 function renderNav(){
   const nav=document.getElementById("weeks");nav.textContent="";
@@ -70,7 +73,7 @@ function renderWeek(){
       box.append(el("div",{class:"q"},el("p",{html:`${qi+1}. ${md(q.q)}`}),opts,why));
     });
     upd();
-    const reset=el("button",{class:"opt",style:"justify-self:start;font-size:13px",onclick:()=>{delete answers[current];store.set("cs50p-quiz",answers);render()}},"Reiniciar quiz");
+    const reset=el("button",{class:"btn--small",onclick:()=>{delete answers[current];store.set("cs50p-quiz",answers);render()}},"Reiniciar quiz");
     main.append(block("04","Quiz antes del problem set",el("div",{style:"margin:-4px 0 12px"},score),box,el("div",{style:"margin-top:14px"},reset)));
   }
 
@@ -93,7 +96,7 @@ function renderWeek(){
       list.append(card);
     });
     const kids=[list];
-    if(w.submit)kids.unshift(el("p",{style:"margin:0 0 12px;font-size:14.5px;color:var(--muted)",html:md(w.submit)}));
+    if(w.submit)kids.unshift(el("p",{style:"margin:0 0 12px;font-size:14.5px;color:var(--ink-2)",html:md(w.submit)}));
     main.append(block("06","Problem set",...kids));
   }
 
@@ -136,9 +139,9 @@ function practiceCard(p,key){
   });
   const res=el("div",{class:"results",role:"status"});
   const stdin=el("input",{class:"stdin",id:"in-"+key,placeholder:"Entradas para Ejecutar, separadas por | (ej: 100|300)"});
-  const check=el("button",{class:"btn primary"},"Comprobar");
-  const run=el("button",{class:"btn"},"Ejecutar");
-  const reset=el("button",{class:"btn"},"Volver al inicio");
+  const check=el("button",{class:"btn--primary"},"Comprobar");
+  const run=el("button",{class:"btn--secondary"},"Ejecutar");
+  const reset=el("button",{class:"btn--ghost",style:"margin-left:auto"},"Volver al inicio");
   async function busy(b,fn){check.disabled=run.disabled=true;const t=b.textContent;b.textContent="Corriendo…";try{await fn()}catch(e){res.textContent="";res.append(el("div",{class:"res ko"},"No se pudo cargar Python en el navegador. Revisa tu conexión y vuelve a intentar."))}finally{b.textContent=t;check.disabled=run.disabled=false}}
   check.onclick=()=>busy(check,async()=>{
     codes[key]=ta.value;store.set("cs50p-code",codes);res.textContent="";let all=true;
@@ -160,6 +163,16 @@ function practiceCard(p,key){
   card.append(el("div",{class:"t"},el("span",{},p.name),badge),el("p",{class:"p",html:md(p.prompt)}),ta,stdin,el("div",{class:"row"},check,run,reset),res);
   return card;
 }
+// ── Tema: system → light → dark; el botón dice el modo al que cambiará
+const THEMES=["system","light","dark"];const THEME_NEXT_LABEL={system:"Modo claro",light:"Modo oscuro",dark:"Modo del sistema"};
+function applyTheme(){
+  const t=THEMES.includes(prefs.theme)?prefs.theme:"system";
+  if(t==="system")delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t;
+  const b=document.getElementById("themeToggle");if(b)b.textContent=THEME_NEXT_LABEL[t];
+}
+document.getElementById("themeToggle")?.addEventListener("click",()=>{const t=THEMES.includes(prefs.theme)?prefs.theme:"system";prefs.theme=THEMES[(THEMES.indexOf(t)+1)%3];savePrefs();applyTheme()});
+applyTheme();
+
 function render(){renderNav();renderWeek();renderProgress()}
 render();
 

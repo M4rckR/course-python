@@ -4,25 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Bitácora CS50P</title>
+<script>try{const t=(JSON.parse(localStorage.getItem("cs50p:v1"))||{}).theme;if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="design/tokens.css">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
 <div class="wrap">
   <header class="top">
     <div>
       <h1>Bitácora <span class="py">CS50P</span></h1>
       <p class="sub">Cada semana del curso en versión corta: lo nuevo frente a JavaScript, las trampas, un quiz y pistas para el problem set. Lees, practicas aquí mismo con corrección automática y luego resuelves el problem set.</p>
     </div>
-    <div class="progress" aria-live="polite">
-      <div class="lbl"><span>Ejercicios aprobados + problem sets</span><span id="progTxt">0 / 0</span></div>
-      <div class="bar"><i id="progBar"></i></div>
+    <div class="top__side">
+      <button class="theme-toggle" id="themeToggle" type="button">Modo claro</button>
+      <div class="progress" aria-live="polite">
+        <div class="lbl"><span>Ejercicios aprobados + problem sets</span><span id="progTxt">0 / 0</span></div>
+        <div class="bar"><i id="progBar"></i></div>
+      </div>
     </div>
   </header>
 
   <nav class="weeks" id="weeks" role="tablist" aria-label="Semanas del curso"></nav>
-  <main id="main"></main>
+  <main id="main" tabindex="-1"></main>
   <p class="note">Tu avance (problemas marcados y respuestas del quiz) se guarda solo en este navegador.</p>
 </div>
 <script src="app.js"></script>
