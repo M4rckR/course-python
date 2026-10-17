@@ -1,0 +1,187 @@
+/* Bitácora CS50P — tokens v1
+   Fuentes: <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+   Tema: sin atributo = sigue al sistema; data-theme="light" | "dark" en <html> fuerza. */
+
+:root {
+  color-scheme: light;
+
+  /* Color · superficies */
+  --bg: #F5F3EE;          /* papel, fondo de página y área de código */
+  --surface: #FFFFFF;     /* tarjetas, opciones de quiz */
+  --surface-2: #EEEBE4;   /* toolbar/gutter del editor, código inline, pistas, nav activa */
+  --line: #DDD8CE;        /* bordes 1px, segmentos pendientes */
+
+  /* Color · tinta */
+  --ink: #1D1C1A;         /* texto principal */
+  --ink-2: #58544D;       /* texto secundario, meta (4.5:1 sobre --bg) */
+  --ink-3: #8A857C;       /* solo decorativo: números de línea, "sin cargar" */
+
+  /* Color · acento (lo que toca ahora) */
+  --accent: #2346C8;
+  --accent-soft: #E4E9FB; /* fondo item actual, línea activa del editor */
+  --on-accent: #FFFFFF;   /* texto sobre botón primario */
+  --mark: #FBEFB8;        /* resaltador (reservado) */
+
+  /* Color · resultados */
+  --ok: #1E7A4C;
+  --ok-soft: #DEF1E5;
+  --on-ok: #FFFFFF;
+  --bad: #B5351E;
+  --bad-soft: #FAE2DB;
+
+  /* Color · sintaxis Python */
+  --kw: #9A2F72;          /* if elif else def return for while in not and or import from class try except True False None */
+  --fn: #2346C8;          /* builtins y llamadas: print input int str len range */
+  --str: #1E7A4C;
+  --num: #A9520C;
+  --com: #8A857C;
+
+  /* Lienzo de presentación (solo mockups) */
+  --canvas: #D9D5CC;
+
+  /* Tipografía */
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --fw-regular: 400;
+  --fw-medium: 500;   /* mono labels, display medio */
+  --fw-bold: 700;
+
+  /* Escala (px) */
+  --fs-stat: 52px;     /* "75 días" */
+  --fs-h1: 44px;       /* título de semana (desktop) */
+  --fs-h1-home: 34px;  /* título "Continuar" */
+  --fs-h2: 32px;       /* título Practica aquí */
+  --fs-h2-focus: 30px; /* pregunta en modo foco */
+  --fs-h3: 22px;       /* títulos de sección, h2 de bloque */
+  --fs-h4: 20px;       /* título de tarjeta / logo 19 */
+  --fs-body-lg: 17px;  /* lectura: prompts, explicaciones, filas de semana */
+  --fs-ui: 16px;       /* botones, filas plegadas */
+  --fs-body: 15px;     /* UI general, pistas, índice */
+  --fs-meta: 14px;     /* meta, etiquetas de estado */
+  --fs-label: 13px;    /* etiquetas mono en mayúsculas */
+  --fs-micro: 12px;    /* numeración 01–07, atajos */
+  --fs-code: 15px;     /* editor desktop */
+  --fs-code-sm: 14px;  /* editor móvil, resultados */
+
+  --lh-display: 1.05;
+  --lh-heading: 1.1;
+  --lh-question: 1.25;
+  --lh-body: 1.55;
+  --lh-ui: 1.5;
+  --lh-code: 24px;     /* desktop; 22px en móvil */
+  --lh-code-sm: 22px;
+
+  --ls-display: -0.025em;
+  --ls-heading: -0.02em;
+  --ls-label: 0.04em;
+
+  /* Espaciado (base 4) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+
+  /* Radios */
+  --radius-bar: 2px;    /* segmentos de progreso */
+  --radius-code: 4px;   /* código inline */
+  --radius-check: 5px;  /* checkbox pset */
+  --radius-sm: 6px;     /* botones secundarios, nav, chips */
+  --radius-md: 8px;     /* botón primario, filas plegadas, opciones */
+  --radius-lg: 10px;    /* tarjetas, editor, resultados */
+  --radius-xl: 12px;    /* sección Práctica */
+  --radius-pill: 999px;
+
+  /* Bordes */
+  --border: 1px solid var(--line);
+  --border-current: 1.5px solid var(--accent);
+  --border-strong: 1.5px solid var(--ink);
+
+  /* Sombras: no hay elevación. Solo anillos funcionales. */
+  --shadow-none: none;
+  --shadow-focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  --shadow-error-line: inset 3px 0 0 var(--bad);
+  --focus-outline: 2px solid var(--accent);
+  --focus-offset: 2px;
+
+  /* Layout */
+  --header-h: 60px;
+  --page-pad: 32px;
+  --sidebar-w: 240px;
+  --layout-gap: 48px;
+  --content-max: 860px;
+  --focus-max: 680px;
+  --home-aside-w: 340px;
+  --gutter-w: 48px;      /* números de línea desktop; 34px móvil */
+  --tap-min: 44px;
+
+  /* Movimiento */
+  --dur-fast: 120ms;
+  --dur-base: 160ms;
+  --dur-toast: 4000ms;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121316;
+    --surface: #1A1C20;
+    --surface-2: #23262C;
+    --line: #30343B;
+    --ink: #ECEAE4;
+    --ink-2: #ABA79E;
+    --ink-3: #77736A;
+    --accent: #93AAFF;
+    --accent-soft: #1F2846;
+    --on-accent: #0E1530;
+    --mark: #3A3219;
+    --ok: #62D293;
+    --ok-soft: #14301F;
+    --on-ok: #0B1F13;
+    --bad: #FF8F77;
+    --bad-soft: #3B1C16;
+    --kw: #E7A3D2;
+    --fn: #93AAFF;
+    --str: #8DD6A8;
+    --num: #F3B56E;
+    --com: #8A867C;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121316;
+  --surface: #1A1C20;
+  --surface-2: #23262C;
+  --line: #30343B;
+  --ink: #ECEAE4;
+  --ink-2: #ABA79E;
+  --ink-3: #77736A;
+  --accent: #93AAFF;
+  --accent-soft: #1F2846;
+  --on-accent: #0E1530;
+  --mark: #3A3219;
+  --ok: #62D293;
+  --ok-soft: #14301F;
+  --on-ok: #0B1F13;
+  --bad: #FF8F77;
+  --bad-soft: #3B1C16;
+  --kw: #E7A3D2;
+  --fn: #93AAFF;
+  --str: #8DD6A8;
+  --num: #F3B56E;
+  --com: #8A867C;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; }
+}
