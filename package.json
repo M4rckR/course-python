@@ -1,0 +1,10 @@
+{
+  "name": "bitacora-cs50p",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Guía semanal de CS50P en español con práctica de Python en el navegador",
+  "scripts": {
+    "dev": "npx --yes serve@14.2.4 -l 3000 .",
+    "check": "node tools/check-data.js"
+  }
+}
