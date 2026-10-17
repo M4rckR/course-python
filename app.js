@@ -4,6 +4,8 @@ let weeks={}; let current=0; let loaded=false;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let done=store.get("cs50p-done",{}); let answers=store.get("cs50p-quiz",{}); let passed=store.get("cs50p-passed",{}); let codes=store.get("cs50p-code",{});
 // Estado nuevo del rediseño (tema, última posición, días de estudio, secciones marcadas…). Las 4 claves de arriba no cambian.
+// ¿Había progreso guardado antes de esta carga? (decide si "Antes de empezar" se da por hecho)
+const hadProgress=["cs50p:v1","cs50p-done","cs50p-quiz","cs50p-passed","cs50p-code"].some(k=>{const v=store.get(k,null);return v&&typeof v==="object"&&Object.keys(v).length>0});
 let prefs=store.get("cs50p:v1",{});
 if(typeof prefs!=="object"||!prefs)prefs={};
 // v2 (8 secciones, Shorts como 04): corre last.section ≥ 4 y focus.step ≥ 3 una sola vez
@@ -13,6 +15,10 @@ if((prefs.v||1)<2){
   prefs.v=2;
 }
 const savePrefs=()=>store.set("cs50p:v1",prefs);
+// Antes de empezar (§18): quien ya tenía progreso guardado tiene la preparación hecha
+if(!Array.isArray(prefs.setup)){prefs.setup=Array(4).fill(hadProgress);if(hadProgress)prefs.setupHidden=true}
+// Con 4/4 la fila "Preparación lista" solo dura la sesión en que se completó
+if(prefs.setup.every(Boolean)&&!sessionStorage.getItem("cs50p-setup-done"))prefs.setupHidden=true;
 if(!prefs.startedAt){const d=new Date();prefs.startedAt=[...(prefs.studyDays||[])].sort()[0]||`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;savePrefs()}
 const el=(t,a={},...c)=>{const n=document.createElement(t);for(const[k,v]of Object.entries(a)){if(v==null||v===false)continue;if(k==="class")n.className=v;else if(k==="html")n.innerHTML=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else n.setAttribute(k,v)}for(const x of c.flat()){if(x==null||x===false)continue;n.append(x.nodeType?x:document.createTextNode(x))}return n};
 // inline: `code` y **negrita**, escapando todo lo demás
@@ -256,7 +262,7 @@ function sectionBody(key){
       w.traps?.length?el("ul",{class:"traps"},w.traps.map(t=>el("li",{},el("span",{class:"traps__label"},"Trampa"),el("span",{html:md(t)})))):null];
     case "shorts":return[el("p",{class:"section-card__lead"},"Videos cortos de un solo tema. Míralos después de la clase y antes del problem set."),el("ul",{class:"shorts"},w.shorts.map((x,j)=>shortItem(x,j)))];
     case "quiz":return[el("div",{class:"quiz"},w.quiz.map((q,qi)=>quizQuestion(q,qi)))];
-    case "pset":return[w.submit?el("p",{class:"pset__submit",html:md(w.submit)}):null,el("div",{class:"pset"},w.pset.map((p,j)=>psetItem(p,j)))];
+    case "pset":return[w.submit?el("p",{class:"pset__submit",html:md(w.submit)}):null,current===0?setupRow():null,el("div",{class:"pset"},w.pset.map((p,j)=>psetItem(p,j)))];
     case "project":return[el("p",{class:"project__goal",html:md(w.project.goal||"")}),w.project.steps?.length?el("ol",{class:"section-list"},w.project.steps.map(x=>el("li",{html:md(x)}))):null];
   }
 }
@@ -990,6 +996,89 @@ addEventListener("keydown",e=>{
   else if(/^[1-4]$/.test(e.key)){const o=document.querySelectorAll("#focus .quiz-opt")[+e.key-1];if(o&&!o.disabled){e.preventDefault();o.click()}}
 });
 
+// ── Botón Copiar (§21): "✓ Copiado" 2 s; si el portapapeles falla, selecciona el texto
+const copyLive=el("p",{class:"visually-hidden","aria-live":"polite"});document.body.append(copyLive);
+function copyButton(getText,{selectEl,onCopied}={}){
+  const b=el("button",{class:"btn-copy",type:"button"},"Copiar");let t=0;
+  b.addEventListener("click",async()=>{
+    clearTimeout(t);
+    try{await navigator.clipboard.writeText(getText());b.dataset.state="ok";b.textContent="✓ Copiado";copyLive.textContent="Copiado al portapapeles";onCopied?.()}
+    catch(e){const n=selectEl?.();if(n){const r=document.createRange();r.selectNodeContents(n);const sel=getSelection();sel.removeAllRanges();sel.addRange(r)}
+      b.dataset.state="fail";b.textContent="Selecciona y copia";copyLive.textContent="No se pudo copiar: el texto quedó seleccionado"}
+    t=setTimeout(()=>{delete b.dataset.state;b.textContent="Copiar"},2000);
+  });
+  return b;
+}
+
+// ── Antes de empezar (§18). Pasos fijos: no vienen del JSON. Los enlaces 1 y 2 están en la página del Problem Set 0.
+const PSET0="https://cs50.harvard.edu/python/psets/0/";
+const SETUP_STEPS=[
+  {title:"Llenar el formulario",desc:"Registro en el curso con tu nombre y correo.",url:PSET0,cta:"Abrir Problem Set 0"},
+  {title:"Autorizar GitHub",desc:"Permite que submit50 envíe tus problemas.",url:PSET0,cta:"Abrir Problem Set 0"},
+  {title:"Entrar a cs50.dev",desc:"Abre tu VS Code en la nube con tu cuenta de GitHub.",url:"https://cs50.dev",cta:"Abrir cs50.dev",mobileNote:"Mejor en la laptop: el editor en la nube no es cómodo en el celular."},
+  {title:"Ejecutar update50",desc:"En la terminal de cs50.dev:",command:"update50"},
+];
+const setupDone=()=>prefs.setup.filter(Boolean).length;
+function setSetup(j,v){
+  prefs.setup[j]=v;if(!v)prefs.setupHidden=false;
+  if(prefs.setup.every(Boolean))sessionStorage.setItem("cs50p-setup-done","1");else sessionStorage.removeItem("cs50p-setup-done");
+  savePrefs();
+}
+function setupCommand(cmd){
+  const code=el("code",{class:"setup-cmd__text"},cmd);
+  return el("div",{class:"setup-cmd"},el("span",{class:"setup-cmd__prompt","aria-hidden":"true"},"$ "),code,copyButton(()=>cmd,{selectEl:()=>code}));
+}
+// Un paso: done = tachado, current (primer pendiente) = resaltado con botón, pending = enlace de texto
+function setupStep(j,{onChange,compact=false}){
+  const st=SETUP_STEPS[j],done=prefs.setup[j],cur=!done&&prefs.setup.findIndex(x=>!x)===j;
+  const state=done?"done":cur?"current":"pending",id=`setup-${compact?"c":"h"}-${j}`;
+  const cb=el("input",{type:"checkbox",class:"pset-check setup-step__check",id});cb.checked=done;
+  cb.addEventListener("change",()=>{setSetup(j,cb.checked);onChange(j)});
+  const action=st.command?setupCommand(st.command)
+    :cur?el("a",{class:"btn--primary setup-step__btn",href:st.url,target:"_blank",rel:"noopener"},`${st.cta} ↗`)
+    :el("a",{class:"setup-step__link",href:st.url,target:"_blank",rel:"noopener"},`${st.cta} ↗`);
+  return el("li",{class:"setup-step","data-state":state},
+    el("div",{class:"setup-step__head"},cb,el("label",{for:id,class:"setup-step__label"},`Paso ${j+1}`,cur?" · Ahora":"",el("span",{class:"visually-hidden"},`: ${st.title}`))),
+    el("h3",{class:"setup-step__title"},st.title),
+    el("p",{class:"setup-step__desc"+(st.mobileNote?" hide-mobile":"")},st.desc),
+    st.mobileNote&&cur?el("p",{class:"setup-step__desc only-mobile"},st.mobileNote):null,
+    done?null:action);
+}
+// Bloque de Inicio (o fila "Preparación lista" al llegar a 4/4 en esta sesión)
+function buildSetup(){
+  const box=el("div",{class:"setup-wrap"});
+  // Repinta todo Inicio ("Continuar" y la cuenta atrás dependen de la preparación) y devuelve el foco
+  const repaint=focusId=>{renderHome();(focusId&&document.getElementById(focusId)||document.querySelector(".setup-done__hide, .setup .setup-step__check"))?.focus()};
+  if(prefs.setup.every(Boolean)){
+    box.append(el("div",{class:"setup-done",role:"status"},el("span",{class:"results__check","aria-hidden":"true"},"✓"),
+      el("div",{},el("p",{class:"setup-done__title"},"Preparación lista"),el("p",{class:"setup-done__sub"},"Ya puedes enviar problemas con submit50.")),
+      el("button",{class:"setup-done__hide",type:"button",onclick:()=>{prefs.setupHidden=true;savePrefs();renderHome();document.getElementById("main").focus()}},"ocultar")));
+    return box;
+  }
+  const n=setupDone();
+  box.append(el("section",{class:"setup","aria-labelledby":"setup-t"},
+    el("header",{class:"setup__head"},
+      el("div",{},el("p",{class:"label setup__label"},el("span",{class:"hide-mobile"},"Antes de empezar · una sola vez"),el("span",{class:"only-mobile"},"Antes de empezar")),
+        el("h2",{id:"setup-t"},el("span",{class:"hide-mobile"},"Prepara tu cuenta de CS50"),el("span",{class:"only-mobile"},"Prepara tu cuenta"))),
+      el("div",{class:"setup__meta"},segs(prefs.setup.map((x,j)=>x?"done":j===prefs.setup.findIndex(y=>!y)?"current":"pending"),"segments setup__segs"),
+        el("span",{},el("span",{class:"hide-mobile"},`${n} de 4 · ≈ 10 min`),el("span",{class:"only-mobile"},`${n}/4`)))),
+    el("ol",{class:"setup__steps"},SETUP_STEPS.map((_,j)=>setupStep(j,{onChange:k=>repaint(`setup-h-${k}`)}))),
+    el("p",{class:"setup__all"},el("button",{type:"button",class:"setup__all-btn",onclick:()=>{for(let j=0;j<4;j++)prefs.setup[j]=true;setSetup(0,true);repaint()}},"Ya lo completé"),
+      el("span",{class:"hide-mobile"}," · marca los 4 pasos si ya preparaste tu cuenta en otro navegador"))));
+  return box;
+}
+// En W0 → 07 Problem set: fila plegada "Preparación · 4/4 ✓ · abrir" (ahí se puede desmarcar)
+let setupRowOpen=false;
+function setupRow(){
+  const n=setupDone(),wrap=el("div",{class:"setup-row",id:"setupRow"});
+  const toggle=el("button",{class:"section-row",type:"button","aria-expanded":String(setupRowOpen),"aria-controls":"setupRowList",onclick:()=>{setupRowOpen=!setupRowOpen;wrap.replaceWith(setupRow());document.querySelector("#setupRow .section-row")?.focus()}},
+    el("span",{class:"num","aria-hidden":"true"},"↳"),el("span",{class:"section-row__title"},"Preparación",el("span",{class:"section-row__sub"},` · ${n}/4`)),
+    el("span",{class:"section-row__status","data-ok":n===4?"true":null},n===4?"✓ · ":"",el("span",{class:"section-row__open"},setupRowOpen?"cerrar":"abrir")));
+  wrap.append(toggle);
+  if(setupRowOpen)wrap.append(el("ol",{class:"setup__steps setup__steps--compact",id:"setupRowList"},SETUP_STEPS.map((_,j)=>setupStep(j,{compact:true,onChange:k=>{document.getElementById("setupRow").replaceWith(setupRow());document.getElementById(`setup-c-${k}`)?.focus()}}))));
+  return wrap;
+}
+
 // ── Inicio
 const DAY_LETTERS=["L","M","X","J","V","S","D"];
 // Primera sección visible sin hacer (índice 1–8 en SECTIONS), o null si está completa
@@ -1021,7 +1110,10 @@ const weekSegStates=(i,cur)=>visibleSections(i).map(s=>sectionDone(i,s.key)?"don
 
 function renderHome(){
   const main=document.getElementById("main");main.textContent="";main.className="app home";
-  const top=el("div",{class:"home__top"});
+  const showSetup=!prefs.setupHidden&&(!prefs.setup.every(Boolean)||sessionStorage.getItem("cs50p-setup-done"));
+  const setupPending=showSetup&&!prefs.setup.every(Boolean);
+  if(showSetup)main.append(el("div",{class:"home__setup"},buildSetup()));
+  const top=el("div",{class:"home__top"+(setupPending?" home__top--after-setup":"")});
   const col=el("div",{class:"home__main"});top.append(col);
   const bw=[...Array(10).keys()].reverse().find(bannerActive);if(bw!=null)col.append(weekBanner(bw));
   // Continuar
@@ -1029,7 +1121,11 @@ function renderHome(){
   if(t){
     const [long,short,code]=continueDetail(t);const top=col;
     const go=el("a",{class:"btn--primary",href:"#/w/"+t.week,onclick:()=>{pendingScroll=SECTIONS[t.section-1].key}},"Continuar →");
-    top.append(el("article",{class:"continue-card","aria-labelledby":"continue-title"},
+    // Con la preparación pendiente, "Continuar" baja a secundario: "DESPUÉS · W0 · … · Empezar W0 →"
+    if(setupPending)top.append(el("article",{class:"continue-card continue-card--after","aria-labelledby":"continue-title"},
+      el("div",{},el("p",{class:"label continue-card__label"},"Después"),el("h2",{class:"continue-card__title",id:"continue-title"},`W${t.week} · `,el("span",{class:"hide-mobile"},weeks[t.week].title),el("span",{class:"only-mobile"},weeks[t.week].title.split(" ")[0]))),
+      el("a",{class:"btn--secondary continue-card__after-btn",href:"#/w/"+t.week,onclick:()=>{pendingScroll=SECTIONS[t.section-1].key}},el("span",{class:"hide-mobile"},`Empezar W${t.week} →`),el("span",{class:"only-mobile"},"Empezar →"))));
+    else top.append(el("article",{class:"continue-card","aria-labelledby":"continue-title"},
       el("p",{class:"label continue-card__label"},el("span",{class:"hide-mobile"},"Continuar donde lo dejé"),el("span",{class:"only-mobile"},"Continuar")),
       el("h2",{class:"continue-card__title",id:"continue-title"},`W${t.week} · ${weeks[t.week].title}`),
       el("p",{class:"continue-card__sub"},el("span",{class:"hide-mobile"},long,code?el("span",{class:"mono-ink"},code):null),el("span",{class:"only-mobile"},short)),
@@ -1059,7 +1155,7 @@ function renderHome(){
     el("ol",{class:"study-week__days"},week.map(d=>el("li",{"data-state":d.studied?"studied":d.today?"today":d.future?"future":"missed","aria-current":d.today?"date":null},
       el("span",{class:"study-week__dot","aria-hidden":"true"}),el("span",{"aria-hidden":"true"},d.l),
       el("span",{class:"visually-hidden"},`${d.key}: ${d.studied?"estudiado":d.future?"por venir":"sin estudiar"}`)))));
-  top.append(el("aside",{class:"home__aside"},countdown,studyWeek));
+  top.append(el("aside",{class:"home__aside"},countdown,setupPending?null:studyWeek));
   main.append(top);
 
   // Lista de semanas
