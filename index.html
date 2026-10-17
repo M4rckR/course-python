@@ -13,24 +13,19 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Saltar al contenido</a>
-<div class="wrap">
-  <header class="top">
-    <div>
-      <h1>Bitácora <span class="py">CS50P</span></h1>
-      <p class="sub">Cada semana del curso en versión corta: lo nuevo frente a JavaScript, las trampas, un quiz y pistas para el problem set. Lees, practicas aquí mismo con corrección automática y luego resuelves el problem set.</p>
+<div class="app">
+  <header class="app-header">
+    <a class="app-logo" href="#/">Bitácora <span>CS50P</span></a>
+    <nav class="app-nav" aria-label="Principal"><a href="#/" id="navHome">Inicio</a><a href="#/w/0" id="navWeeks">Semanas</a></nav>
+    <div class="global-progress" id="globalProgress" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="0" aria-label="Progreso global">
+      <span class="global-progress__label">Progreso global</span>
+      <span class="global-progress__track"><span class="global-progress__fill" id="progBar"></span></span>
+      <span class="global-progress__value" id="progTxt">0/0</span>
     </div>
-    <div class="top__side">
-      <button class="theme-toggle" id="themeToggle" type="button">Modo claro</button>
-      <div class="progress" aria-live="polite">
-        <div class="lbl"><span>Ejercicios aprobados + problem sets</span><span id="progTxt">0 / 0</span></div>
-        <div class="bar"><i id="progBar"></i></div>
-      </div>
-    </div>
+    <button class="theme-toggle" id="themeToggle" type="button">Modo oscuro</button>
   </header>
-
   <nav class="weeks" id="weeks" role="tablist" aria-label="Semanas del curso"></nav>
   <main id="main" tabindex="-1"></main>
-  <p class="note">Tu avance (problemas marcados y respuestas del quiz) se guarda solo en este navegador.</p>
 </div>
 <script src="app.js"></script>
 </body>
