@@ -300,12 +300,50 @@ a.week-tab:hover{color:var(--ink);background:var(--surface-2)}
 .quiz-why{margin:0;padding:14px 18px;border-left:3px solid var(--ok);font-size:var(--fs-body-lg);line-height:var(--lh-body);text-wrap:pretty}
 .quiz-why[data-result="bad"]{border-left-color:var(--bad)}
 
-/* Shorts (§15) */
+/* ── Flujo CS50 (§14) */
+.week-head .cs50-flow{margin-top:14px}
+.cs50-flow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);font:var(--fw-medium) var(--fs-label) var(--font-mono)}
+.cs50-flow__sep{color:var(--ink-3)}
+.cs50-flow__step{display:inline-flex;align-items:center;padding:5px 11px;border-radius:var(--radius-pill);text-decoration:none;white-space:nowrap}
+.cs50-flow__step[data-state="done"]{border:var(--border);color:var(--ok)}
+.cs50-flow__step[data-state="current"]{border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:var(--fw-bold)}
+.cs50-flow__step[data-state="pending"]{border:var(--border-dashed);color:var(--ink-2)}
+.cs50-flow__step[data-state="all"]{border:1px solid var(--ok);background:var(--ok-soft);color:var(--ok)}
+.cs50-flow__step:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* ── Enlaces de clase (§17) */
+.week-links__label{margin:0;font:var(--fw-medium) var(--fs-micro) var(--font-mono);letter-spacing:0.05em;text-transform:uppercase;color:var(--ink-2)}
+
+/* ── Consejos de David (§16) */
+.tips{margin-top:6px;padding-top:18px;border-top:var(--border-dashed);display:grid;grid-template-columns:150px minmax(0,1fr);gap:20px}
+.tips__label p{margin:0}
+.tips__label p:first-child{font:var(--fw-medium) var(--fs-micro) var(--font-mono);letter-spacing:0.05em;text-transform:uppercase;color:var(--ink-2)}
+.tips__label p+p{margin-top:var(--space-1);font-size:var(--fs-label);color:var(--ink-2)}
+.tips__list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-3)}
+.tips__list li{display:grid;grid-template-columns:22px 1fr;gap:6px}
+.tips__key{font:var(--fw-medium) var(--fs-label)/26px var(--font-mono);color:var(--ink-3)}
+.tips__text{font:var(--fw-medium) 18px/1.4 var(--font-display);color:var(--ink);text-wrap:pretty}
+.tips__text code{font:var(--fw-medium) 16px var(--font-mono);background:none;padding:0}
+
+/* ── Shorts (§15) */
+.num--now{color:var(--accent);text-transform:uppercase;letter-spacing:var(--ls-label)}
+.shorts__meta{display:flex;align-items:center;gap:10px}
+.shorts__segs>span{flex:none;width:22px}
+.section-card__lead{margin:0;font-size:var(--fs-body);color:var(--ink-2)}
+.section-card--shorts .section-card__body{margin-top:var(--space-2);gap:14px}
 .shorts{list-style:none;margin:0;padding:0}
-.short{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-3) 0;border-top:var(--border)}
+.short{border-top:var(--border)}
+.short__row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-3) 0;cursor:pointer}
+.short[data-confirmed="false"] .short__row{align-items:start}
+.short[data-confirmed="false"] .short__check{margin-top:2px}
+.short__text{display:flex;flex-direction:column;min-width:0}
+.short__line{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .short__title{font-size:var(--fs-ui);font-weight:var(--fw-bold);text-decoration:none}
 .short__title:hover{text-decoration:underline}
 .short[data-seen] .short__title{font-weight:var(--fw-regular);color:var(--ink-2);text-decoration:line-through}
+.short__note{margin-top:var(--space-1);font-size:var(--fs-meta);line-height:1.45;color:var(--ink-2)}
+.chip--unconfirmed{display:inline-block;font:var(--fw-medium) var(--fs-micro) var(--font-mono);color:var(--ink-2);padding:2px 7px;border:var(--border-unconfirmed);border-radius:var(--radius-pill);white-space:nowrap}
+.shorts__bar{display:none}
 
 /* Problem set (1g fila 5) */
 .pset{display:flex;flex-direction:column}
@@ -558,6 +596,35 @@ html[data-mode="focus"] .app-header,html[data-mode="focus"] .week-tabs,html[data
   .ex-actions{position:sticky;bottom:0;z-index:5;display:grid;grid-template-columns:1fr auto;gap:var(--space-2);margin:0 calc(-1 * var(--space-4));padding:var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom,0px));border-top:var(--border);background:var(--surface)}
   .ex-actions__reset:empty{display:none}
   .ex-reset-row{display:flex;justify-content:flex-end}
+  /* Flujo, enlaces y consejos en móvil */
+  .cs50-flow{gap:6px;font-size:var(--fs-micro)}
+  .week-head .cs50-flow{margin-top:0}
+  /* Tap de 44px: el <a> mide 44 de alto y la píldora visible (26px) es un ::before */
+  .cs50-flow__step{position:relative;isolation:isolate;min-height:var(--tap-min);padding:0 9px;border:0!important;background:none!important}
+  .cs50-flow__step::before{content:"";position:absolute;inset:9px 0;border-radius:var(--radius-pill);z-index:-1}
+  .cs50-flow__step[data-state="done"]::before{border:var(--border)}
+  .cs50-flow__step[data-state="current"]::before{border:1px solid var(--accent);background:var(--accent-soft)}
+  .cs50-flow__step[data-state="pending"]::before{border:var(--border-dashed)}
+  .cs50-flow__step[data-state="all"]::before{border:1px solid var(--ok);background:var(--ok-soft)}
+  .week-links--head{gap:0 var(--space-4);font-size:var(--fs-meta)}
+  .tips{grid-template-columns:1fr;gap:10px}
+  .tips__text{font-size:17px}
+  /* Shorts en móvil (2b): sin caja, filas de 52px tocables enteras, barra "Ir al quiz" */
+  #s-shorts[data-state]{margin:0;border:0;border-radius:0;background:transparent;padding:var(--space-4) var(--space-4) 0}
+  #s-shorts .section-card__head{flex-wrap:nowrap;align-items:baseline}
+  #s-shorts .num{display:none}
+  #s-shorts .section-card__title{font-size:var(--fs-h3)}
+  #s-shorts .shorts__segs{display:none}
+  #s-shorts .section-card__count{font-size:var(--fs-label)}
+  #s-shorts .section-card__lead{display:none}
+  .short__row{grid-template-columns:32px minmax(0,1fr) auto;gap:var(--space-2);min-height:52px;padding:0}
+  .short[data-confirmed="false"] .short__row{padding:14px 0;align-items:start}
+  .short__check{width:22px;height:22px}
+  .short__title{display:inline-block;padding:10px 0;margin:-10px 0}
+  .short__note{margin-top:6px}
+  .shorts{border-bottom:var(--border)}
+  .shorts__bar{display:block;position:sticky;bottom:0;z-index:5;margin:var(--space-3) calc(-1 * var(--space-4)) 0;padding:var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom,0px));border-top:var(--border);background:var(--surface)}
+  .shorts__bar .btn--secondary{width:100%;padding:14px}
   /* Editor y resultados en móvil */
   .editor{--lh:var(--lh-code-sm);--gutter-w:34px}
   .editor__bar,.editor__resize{display:none}

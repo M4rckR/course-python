@@ -132,7 +132,7 @@ function sectionCount(key){
     case "summary":return`${w.summary.length} puntos`;
     case "jsToPy":return`${w.jsToPy.length} equivalencias`;
     case "examples":return[w.examples?.length&&`${w.examples.length} ejemplos`,w.traps?.length&&`${w.traps.length} trampas`].filter(Boolean).join(", ");
-    case "shorts":return sectionDone(i,"shorts")?`${shortsSeen(i)} vistos`:`${shortsSeen(i)}/${w.shorts.length} vistos`;
+    case "shorts":{const n=shortsSeen(i);return sectionDone(i,"shorts")?`${n} ${n===1?"visto":"vistos"}`:`${n}/${w.shorts.length} vistos`}
     case "quiz":{const a=answers[i]||{};const n=w.quiz.filter((_,q)=>a[q]!=null).length;const ok=w.quiz.filter((q,k)=>a[k]===q.answer).length;return sectionDone(i,"quiz")?`${ok} de ${w.quiz.length} correctas`:`${n}/${w.quiz.length}`}
     case "practice":{const n=w.practice.filter((_,j)=>passed[`${i}-${j}`]).length;return`${n} de ${w.practice.length} aprobados`}
     case "pset":{const n=w.pset.filter((_,j)=>done[`${i}-${j}`]).length;return`${n}/${w.pset.length} resueltos`}
@@ -170,7 +170,7 @@ function buildIndex(){
         count?el("span",{class:"section-index__count"},count):null));
     }))),
     el("button",{class:"btn--secondary focus-toggle",type:"button",onclick:()=>enterFocus()},"Modo foco",el("kbd",{},"F")),
-    weekLinks("week-links only-desktop"));
+    weekLinks("week-links only-desktop",{label:true}));
 }
 function buildBar(){
   const cur=currentInView;
@@ -180,13 +180,41 @@ function buildBar(){
       d&&!c?"✓":null,pad2(k+1),c?" "+s.short:null,d?el("span",{class:"visually-hidden"},", hecha"):null,!c?el("span",{class:"visually-hidden"}," "+s.short):null);
   }));
 }
-function weekLinks(cls){
-  const w=weeks[current];
+// Enlaces de clase (§17). Cada uno se omite si falta su URL. En la fila corta (tablet/móvil): "Notas ↗ · Video ↗ · Transcript ↗".
+function weekLinks(cls,{label=false}={}){
+  const w=weeks[current],ext={target:"_blank",rel:"noopener"};
   return el("div",{class:cls},
-    w.notesUrl?el("a",{href:w.notesUrl,target:"_blank",rel:"noopener"},"Notas de la clase ↗"):null,
-    w.videoUrl?el("a",{href:w.videoUrl,target:"_blank",rel:"noopener"},"Video ↗"):null,
+    label?el("p",{class:"week-links__label"},`Clase ${current}`):null,
+    w.notesUrl?el("a",{href:w.notesUrl,...ext},label?"Notas de la clase ↗":[el("span",{class:"hide-mobile"},"Notas de la clase ↗"),el("span",{class:"only-mobile"},"Notas ↗")]):null,
+    w.videoUrl?el("a",{href:w.videoUrl,...ext},"Video ↗"):null,
+    w.transcriptUrl?el("a",{href:w.transcriptUrl,...ext},"Transcript ↗"):null,
     w.sources?.length?el("details",{class:"sources"},el("summary",{},`Fuentes oficiales (${w.sources.length})`),
       el("ul",{},w.sources.map(u=>el("li",{},el("a",{href:u,target:"_blank",rel:"noopener"},u.replace(/^https?:\/\//,"")))))):null);
+}
+// Flujo oficial de CS50 bajo el h1 (§14). Quiz, Práctica y Proyecto no aparecen: son de la app, no del flujo oficial.
+const CLASS_KEYS=["summary","jsToPy","examples"];
+function buildFlow(){
+  const w=weeks[current],i=current;
+  const cls=visibleSections(i).filter(s=>CLASS_KEYS.includes(s.key)).map(s=>s.key);
+  const steps=[{name:"Clase",key:cls.find(k=>!sectionDone(i,k))||cls[0]||"summary",done:cls.every(k=>sectionDone(i,k)),count:`${cls.filter(k=>sectionDone(i,k)).length}/${cls.length}`}];
+  if(w.shorts?.length)steps.push({name:"Shorts",key:"shorts",done:sectionDone(i,"shorts"),count:`${shortsSeen(i)}/${w.shorts.length}`});
+  if(w.pset?.length)steps.push({name:"Problem set",mobile:"Pset",key:"pset",done:sectionDone(i,"pset"),count:`${w.pset.filter((_,j)=>done[`${i}-${j}`]).length}/${w.pset.length}`});
+  const nav=el("nav",{class:"cs50-flow",id:"cs50Flow","aria-label":"Flujo de la semana"});
+  const go=key=>e=>{e.preventDefault();scrollToSection(key)};
+  if(steps.every(x=>x.done)){
+    nav.append(el("a",{class:"cs50-flow__step","data-state":"all",href:"#s-pset",onclick:go("pset")},steps.map(x=>`✓ ${x.name}`).join(" → ")));
+    return nav;
+  }
+  const curIdx=steps.findIndex(x=>!x.done);
+  steps.forEach((x,k)=>{
+    if(k)nav.append(el("span",{class:"cs50-flow__sep","aria-hidden":"true"},"→"));
+    const st=x.done?"done":k===curIdx?"current":"pending";
+    const name=x.mobile?[el("span",{class:"hide-mobile"},x.name),el("span",{class:"only-mobile"},x.mobile)]:x.name;
+    // Un solo <span> dentro del <a> (inline-flex) para que no se pierdan los espacios
+    nav.append(el("a",{class:"cs50-flow__step","data-state":st,href:"#s-"+x.key,"aria-current":st==="current"?"step":null,onclick:go(x.key)},
+      el("span",{},st==="done"?"✓ ":null,name,st==="current"?` ${x.count}`:null,st==="done"?el("span",{class:"visually-hidden"},", hecho"):null)));
+  });
+  return nav;
 }
 // Repinta índice, barra, cabecera y pestañas tras un cambio de estado
 let weekWasComplete=false;
@@ -199,7 +227,7 @@ function refreshChrome(){
   document.getElementById("sectionIndex")?.replaceWith(buildIndex());
   const bar=buildBar();document.getElementById("sectionBar")?.replaceWith(bar);
   const chip=bar.querySelector("[aria-current]");if(chip)bar.scrollLeft=chip.offsetLeft-(bar.clientWidth-chip.offsetWidth)/2;
-  document.querySelector(".week-head__segs .segments")?.replaceWith(segs(weekSegStates(current,sectionIdx(currentInView)+1)));
+  document.getElementById("cs50Flow")?.replaceWith(buildFlow());
   renderProgress();
 }
 function setInView(key){
@@ -220,13 +248,13 @@ function codeBlock(code){
 function sectionBody(key){
   const w=weeks[current];
   switch(key){
-    case "summary":return[el("ul",{class:"section-list"},w.summary.map(s=>el("li",{html:md(s)})))];
+    case "summary":return[el("ul",{class:"section-list"},w.summary.map(s=>el("li",{html:md(s)}))),tipsBlock(w)];
     case "jsToPy":return[el("table",{class:"js-py"},el("colgroup",{},el("col",{class:"js-py__code"}),el("col",{class:"js-py__code"}),el("col",{class:"js-py__note"})),el("thead",{},el("tr",{},el("th",{scope:"col"},"JS"),el("th",{scope:"col"},"Python"),el("th",{scope:"col"},"Ojo"))),
       el("tbody",{},w.jsToPy.map(r=>el("tr",{},el("td",{"data-label":"JS"},el("code",{},r.js)),el("td",{"data-label":"Python"},el("code",{},r.py)),el("td",{"data-label":"Ojo"},el("span",{html:md(r.note||"")}))))))];
     case "examples":return[
       ...(w.examples||[]).map(e=>el("div",{class:"example"},e.label?el("p",{class:"example__label",html:md(e.label)}):null,codeBlock(e.code))),
       w.traps?.length?el("ul",{class:"traps"},w.traps.map(t=>el("li",{},el("span",{class:"traps__label"},"Trampa"),el("span",{html:md(t)})))):null];
-    case "shorts":return[el("ul",{class:"shorts"},w.shorts.map((x,j)=>shortItem(x,j)))];
+    case "shorts":return[el("p",{class:"section-card__lead"},"Videos cortos de un solo tema. Míralos después de la clase y antes del problem set."),el("ul",{class:"shorts"},w.shorts.map((x,j)=>shortItem(x,j)))];
     case "quiz":return[el("div",{class:"quiz"},w.quiz.map((q,qi)=>quizQuestion(q,qi)))];
     case "pset":return[w.submit?el("p",{class:"pset__submit",html:md(w.submit)}):null,el("div",{class:"pset"},w.pset.map((p,j)=>psetItem(p,j)))];
     case "project":return[el("p",{class:"project__goal",html:md(w.project.goal||"")}),w.project.steps?.length?el("ol",{class:"section-list"},w.project.steps.map(x=>el("li",{html:md(x)}))):null];
@@ -247,6 +275,7 @@ function buildSection(key){
   const w=weeks[current],k=sectionIdx(key),n=secNum(current,key),d=sectionDone(current,key);
   if(key==="practice")return buildPractice();
   const cur=firstOpenSection(current)===k+1;
+  if(key==="shorts"&&!(d&&!openSections.has(key)))return buildShorts();
   const folded=(d&&!openSections.has(key))||(key==="project"&&!d&&!cur&&!openSections.has(key));
   if(folded){
     const upcoming=!d;
@@ -309,21 +338,52 @@ function weekBanner(i,{animate=false}={}){
       next!=null&&weeks[next]?el("a",{class:"week-complete__next",href:"#/w/"+next},`Abrir W${next} →`):el("a",{class:"week-complete__next",href:"#/"},"Ir a Inicio →")));
 }
 
-// Short con checkbox "visto" (§15). Se guarda en cs50p:v1 → weeks[w].shorts[j]
+// Consejos de David (§16): máximo 4, índice a/b/c/d. Sin tips no se pinta.
+function tipsBlock(w){
+  const tips=(w.tips||[]).filter(t=>String(t).trim()).slice(0,4);if(!tips.length)return null;
+  const id=`tips-${current}`;
+  return el("aside",{class:"tips","aria-labelledby":id},
+    el("div",{class:"tips__label"},el("p",{id},"Consejos de David"),el("p",{},"dichos en la clase")),
+    el("ol",{class:"tips__list"},tips.map((t,k)=>el("li",{},el("span",{class:"tips__key","aria-hidden":"true"},"abcd"[k]),el("span",{class:"tips__text",html:md(t)})))));
+}
+
+// Short con checkbox "visto" (§15). Se guarda en cs50p:v1 → weeks[w].shorts[j]. Toda la fila es <label> salvo el enlace.
 function shortItem(x,j){
-  const wp=weekPrefs(current),id=`short-${current}-${j}`;
-  const cb=el("input",{type:"checkbox",class:"pset-check short__check",id});cb.checked=!!wp.shorts?.[j];
-  const li=el("li",{class:"short","data-seen":cb.checked?"true":null,"data-confirmed":x.confirmed?null:"false"});
+  const wp=weekPrefs(current),id=`short-${current}-${j}`,seen=!!wp.shorts?.[j];
+  const cb=el("input",{type:"checkbox",class:"pset-check short__check",id,"aria-label":`Visto: ${x.title}`});cb.checked=seen;
   cb.addEventListener("change",()=>{
     wp.shorts??={};if(cb.checked)wp.shorts[j]=true;else delete wp.shorts[j];savePrefs();
     markStudied();setLast(current,sectionIdx("shorts")+1,j);
-    li.toggleAttribute("data-seen",cb.checked);if(cb.checked)li.dataset.seen="true";
-    const c=li.closest(".section-card")?.querySelector(".section-card__count");if(c)c.textContent=sectionCount("shorts");
-    refreshChrome();
+    // Repinta la tarjeta (sin ver → parcial → completa) sin plegarla mientras la usas
+    openSections.add("shorts");const node=buildSection("shorts");document.getElementById("s-shorts").replaceWith(node);
+    node.querySelector(`#${id}`)?.focus();refreshChrome();
   });
-  li.append(cb,el("label",{for:id,class:"visually-hidden"},`Visto: ${x.title}`),
-    el("a",{class:"short__title",href:x.url,target:"_blank",rel:"noopener"},x.title,el("span",{"aria-hidden":"true"}," ↗"),el("span",{class:"visually-hidden"}," (abre en otra pestaña)")));
-  return li;
+  const chip=()=>el("span",{class:"chip--unconfirmed"},"sin confirmar");
+  const link=el("a",{class:"short__title",href:x.url,target:"_blank",rel:"noopener"},x.title,el("span",{"aria-hidden":"true"}," ↗"),el("span",{class:"visually-hidden"}," (abre en otra pestaña)"));
+  return el("li",{class:"short","data-seen":seen?"true":null,"data-confirmed":x.confirmed?null:"false"},
+    el("label",{class:"short__row",for:id},cb,
+      el("span",{class:"short__text"},
+        el("span",{class:"short__line"},link,x.confirmed?null:el("span",{class:"hide-mobile"},chip())),
+        x.confirmed?null:el("span",{class:"short__note hide-mobile"},`No sé si este short es oficialmente de W${current}. Cuenta para el avance solo si lo marcas.`),
+        x.confirmed?null:el("span",{class:"short__note only-mobile"},chip()," Puede no ser de W"+current+".")),
+      el("span",{class:"short__min"})));
+}
+// Tarjeta de Shorts: sin ver = pendiente; parcial = actual ("04 · AHORA"); completa = plegada
+function buildShorts(){
+  const w=weeks[current],n=secNum(current,"shorts"),d=sectionDone(current,"shorts"),seen=shortsSeen(current);
+  const state=d?"done":seen?"current":"pending";
+  const seenMap=prefs.weeks?.[current]?.shorts||{};
+  const meta=el("div",{class:"shorts__meta"},segs(w.shorts.map((_,j)=>seenMap[j]?"done":"pending"),"segments shorts__segs"),el("span",{class:"section-card__count"},`${seen}/${w.shorts.length} vistos`));
+  const quiz=w.quiz?.length;
+  return el("section",{class:"section-card section-card--shorts",id:"s-shorts","data-state":state,"aria-labelledby":"s-shorts-title"},
+    el("div",{class:"section-card__head"},
+      el("div",{class:"section-card__name"},el("span",{class:"num"+(state==="current"?" num--now":"")},state==="current"?`${n} · Ahora`:n),el("h2",{class:"section-card__title",id:"s-shorts-title",tabindex:"-1"},"Shorts")),
+      d?el("div",{class:"section-card__done"},el("span",{},"✓ Hecho"),el("button",{class:"btn--small",type:"button","aria-controls":"s-shorts-body","aria-expanded":"true",onclick:()=>{openSections.delete("shorts");const node=buildSection("shorts");document.getElementById("s-shorts").replaceWith(node);node.querySelector(".section-row")?.focus()}},"Plegar")):meta),
+    el("div",{class:"section-card__body",id:"s-shorts-body"},
+      el("p",{class:"section-card__lead"},"Videos cortos de un solo tema. Míralos después de la clase y antes del problem set."),
+      el("ul",{class:"shorts"},w.shorts.map((x,j)=>shortItem(x,j)))),
+    isManual("shorts")&&!d?el("button",{class:"btn--small section-card__mark",type:"button",onclick:()=>markSectionDone("shorts")},"Marcar como hecho"):null,
+    quiz?el("div",{class:"shorts__bar only-mobile"},el("button",{class:"btn--secondary",type:"button",onclick:()=>scrollToSection("quiz")},"Ir al quiz →")):null);
 }
 
 // Pregunta de quiz (1g fila 3)
@@ -775,9 +835,9 @@ function renderWeek(){
     el("p",{class:"week-head__meta"},`Semana ${current} · ${w.time||""}`),
     el("h1",{class:"week-head__title"},w.title),
     el("p",{class:"week-head__time only-mobile"},w.time||""),
-    bannerActive(current)?weekBanner(current):null,
-    el("div",{class:"only-mobile week-head__segs"},segs(weekSegStates(current,sectionIdx(currentInView)+1))),
-    weekLinks("week-links week-links--head below-desktop"));
+    buildFlow(),
+    weekLinks("week-links week-links--head below-desktop"),
+    bannerActive(current)?weekBanner(current):null);
   const sections=SECTIONS.filter(s=>s.has(w)).map(s=>buildSection(s.key));
   main.append(el("div",{class:"week-layout"},buildIndex(),el("div",{class:"week-main"},head,buildBar(),...sections)));
   observeSections();
