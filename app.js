@@ -193,7 +193,7 @@ function sectionBody(key){
   const w=weeks[current];
   switch(key){
     case "summary":return[el("ul",{class:"section-list"},w.summary.map(s=>el("li",{html:md(s)})))];
-    case "jsToPy":return[el("table",{class:"js-py"},el("thead",{},el("tr",{},el("th",{scope:"col"},"JS"),el("th",{scope:"col"},"Python"),el("th",{scope:"col"},"Ojo"))),
+    case "jsToPy":return[el("table",{class:"js-py"},el("colgroup",{},el("col",{class:"js-py__code"}),el("col",{class:"js-py__code"}),el("col",{class:"js-py__note"})),el("thead",{},el("tr",{},el("th",{scope:"col"},"JS"),el("th",{scope:"col"},"Python"),el("th",{scope:"col"},"Ojo"))),
       el("tbody",{},w.jsToPy.map(r=>el("tr",{},el("td",{"data-label":"JS"},el("code",{},r.js)),el("td",{"data-label":"Python"},el("code",{},r.py)),el("td",{"data-label":"Ojo"},el("span",{html:md(r.note||"")}))))))];
     case "examples":return[
       ...(w.examples||[]).map(e=>el("div",{class:"example"},e.label?el("p",{class:"example__label",html:md(e.label)}):null,codeBlock(e.code))),

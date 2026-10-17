@@ -134,7 +134,10 @@ a.week-row:hover{background:var(--surface)}
 @media (max-width:1023px){
   .home__top{grid-template-columns:minmax(0,1fr)}
   .global-progress__label{display:none}
+  .global-progress__track{width:96px}
 }
+/* Tablet estrecha: sin pista de progreso, solo "n/68" (si no, el botón de tema se sale por la derecha) */
+@media (max-width:759px){.global-progress__track{display:none}}
 /* ── Móvil (1d) */
 @media (max-width:639px){
   .hide-mobile{display:none!important}
@@ -257,10 +260,15 @@ a.week-tab:hover{color:var(--ink);background:var(--surface-2)}
 
 /* Contenido de las secciones */
 .section-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:var(--fs-body-lg);line-height:var(--lh-body);max-width:70ch}
-.js-py{border-collapse:collapse;width:100%;font-size:var(--fs-body)}
+/* Anchos fijos 38% / 38% / 24%. Si la tarjeta es tan estrecha que el 24% bajaría de 16ch, "Ojo" queda en 16ch y JS/Python se reparten el resto */
+.section-card__body{container-type:inline-size}
+.js-py{border-collapse:collapse;table-layout:fixed;width:100%;max-width:100%;font-size:var(--fs-body)}
+.js-py__code{width:38%}
+.js-py__note{width:24%}
+@container (max-width:66.67ch){.js-py__code{width:auto}.js-py__note{width:16ch}}
 .js-py th{text-align:left;font:var(--fw-medium) var(--fs-micro) var(--font-mono);letter-spacing:var(--ls-label);color:var(--ink-2);padding:6px 10px 6px 0;border-bottom:var(--border)}
-.js-py td{padding:10px 10px 10px 0;border-bottom:var(--border);vertical-align:top}
-.js-py td > code{font:var(--fw-regular) var(--fs-code-sm)/1.5 var(--font-mono);background:none;padding:0;white-space:pre}
+.js-py td{padding:10px 10px 10px 0;border-bottom:var(--border);vertical-align:top;overflow-wrap:anywhere}
+.js-py td > code{font:var(--fw-regular) var(--fs-code-sm)/1.5 var(--font-mono);background:none;padding:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .js-py td:first-child > code{color:var(--ink-2)}
 .js-py tr:last-child td{border-bottom:0}
 .example{display:flex;flex-direction:column;gap:var(--space-2)}
@@ -522,7 +530,6 @@ html[data-mode="focus"] .app-header,html[data-mode="focus"] .week-tabs,html[data
   .js-py tr{padding:10px 0;border-bottom:var(--border)}
   .js-py td{border:0;padding:2px 0;display:grid;grid-template-columns:56px minmax(0,1fr);gap:var(--space-2)}
   .js-py td::before{content:attr(data-label);font:var(--fw-medium) var(--fs-micro)/1.9 var(--font-mono);color:var(--ink-2)}
-  .js-py td > code{white-space:pre-wrap}
   .code-block{--gutter-w:34px;font-size:var(--fs-code-sm);line-height:var(--lh-code-sm);padding:10px 0}
   .code-block__gutter{padding-right:9px}
   .code-block__code{padding:0 10px}
