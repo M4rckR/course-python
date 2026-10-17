@@ -13,8 +13,8 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Saltar al contenido</a>
-<div class="app">
-  <header class="app-header">
+<header class="app-header">
+  <div class="app-header__inner">
     <a class="app-logo" href="#/">Bitácora <span>CS50P</span></a>
     <nav class="app-nav" aria-label="Principal"><a href="#/" id="navHome">Inicio</a><a href="#/w/0" id="navWeeks">Semanas</a></nav>
     <div class="global-progress" id="globalProgress" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="0" aria-label="Progreso global">
@@ -22,11 +22,11 @@
       <span class="global-progress__track"><span class="global-progress__fill" id="progBar"></span></span>
       <span class="global-progress__value" id="progTxt">0/0</span>
     </div>
-    <button class="theme-toggle" id="themeToggle" type="button">Modo oscuro</button>
-  </header>
-  <nav class="weeks" id="weeks" role="tablist" aria-label="Semanas del curso"></nav>
-  <main id="main" tabindex="-1"></main>
-</div>
+    <button class="theme-toggle" id="themeToggle" type="button"><span class="theme-toggle__text">Modo oscuro</span><svg class="theme-toggle__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="theme-toggle__moon" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/><g class="theme-toggle__sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></svg></button>
+  </div>
+</header>
+<nav class="week-tabs" id="weeks" aria-label="Semanas"><div class="week-tabs__inner" id="weeksInner"></div></nav>
+<main id="main" class="app" tabindex="-1"></main>
 <script src="app.js"></script>
 </body>
 </html>

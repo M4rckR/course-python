@@ -58,8 +58,12 @@ function route(){
 }
 let pendingScroll=null; // sección a la que ir al llegar desde "Continuar"
 
+const reducedMotion=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+const mobileMQ=matchMedia("(max-width: 639px)");
+
 function renderHeader(r){
   const home=r.name==="home";
+  document.body.dataset.route=r.name;
   const nh=document.getElementById("navHome"),nw=document.getElementById("navWeeks");
   nh.toggleAttribute("aria-current",home);if(home)nh.setAttribute("aria-current","page");
   nw.toggleAttribute("aria-current",!home);if(!home)nw.setAttribute("aria-current","page");
@@ -70,97 +74,355 @@ function renderHeader(r){
   document.getElementById("progBar").style.width=total?`${ok/total*100}%`:"0";
   document.getElementById("weeks").hidden=home;
 }
-function renderNav(){
-  const nav=document.getElementById("weeks");nav.textContent="";
+// Pestañas de semana (fila 1 de 1g)
+function renderTabs(){
+  const box=document.getElementById("weeksInner");box.textContent="";
   for(let i=0;i<10;i++){
-    const st=weekStatus(i);
-    const b=el("button",{role:"tab","aria-selected":String(i===current),class:st,title:weeks[i]?.title||WEEK_NAMES[i],onclick:()=>{location.hash="#/w/"+i}},el("span",{class:"dot"}),`W${i}`);
-    nav.append(b);
+    const st=weekStatus(i),title=weeks[i]?.title||WEEK_NAMES[i];
+    const kids=[el("span",{class:"status-dot","data-state":st,"aria-hidden":"true"}),`W${i}`,el("span",{class:"visually-hidden"},`, ${title}, ${STATUS_TEXT[st].toLowerCase()}`)];
+    box.append(st==="empty"
+      ?el("span",{class:"week-tab","data-state":st,"aria-disabled":"true"},...kids)
+      :el("a",{class:"week-tab","data-state":st,href:"#/w/"+i,"aria-current":i===current?"page":null},...kids));
+  }
+  // scrollLeft y no scrollIntoView: este último mueve el punto de partida del Tab a las pestañas
+  const cur=box.querySelector("[aria-current]");if(cur&&(cur.offsetLeft+cur.offsetWidth>box.scrollLeft+box.clientWidth||cur.offsetLeft<box.scrollLeft))box.scrollLeft=cur.offsetLeft-16;
+}
+function renderProgress(){renderHeader(route());renderTabs()}
+
+// ── Vista de semana (1b / 1e)
+let openSections=new Set();  // secciones hechas que el usuario abrió
+let practiceSel=null;        // ejercicio seleccionado en la práctica
+let sectionObserver=null;
+let currentInView=null;      // sección marcada en el índice por el IntersectionObserver
+let userScrolled=false,quietUntil=0; // el scroll a 0 que hace el router al cambiar de vista no cuenta
+addEventListener("scroll",()=>{if(userScrolled||!sectionObserver||performance.now()<quietUntil)return;userScrolled=true;observeSections()},{passive:true});
+const sectionIdx=key=>SECTIONS.findIndex(s=>s.key===key);
+
+// Contador y resumen de cada sección
+function sectionCount(key){
+  const w=weeks[current],i=current;
+  switch(key){
+    case "summary":return`${w.summary.length} puntos`;
+    case "jsToPy":return`${w.jsToPy.length} equivalencias`;
+    case "examples":return[w.examples?.length&&`${w.examples.length} ejemplos`,w.traps?.length&&`${w.traps.length} trampas`].filter(Boolean).join(", ");
+    case "quiz":{const a=answers[i]||{};const n=w.quiz.filter((_,q)=>a[q]!=null).length;const ok=w.quiz.filter((q,k)=>a[k]===q.answer).length;return sectionDone(i,"quiz")?`${ok} de ${w.quiz.length} correctas`:`${n}/${w.quiz.length}`}
+    case "practice":{const n=w.practice.filter((_,j)=>passed[`${i}-${j}`]).length;return`${n} de ${w.practice.length} aprobados`}
+    case "pset":{const n=w.pset.filter((_,j)=>done[`${i}-${j}`]).length;return`${n}/${w.pset.length} resueltos`}
+    case "project":return`${w.project.steps?.length||0} pasos`;
   }
 }
-function renderProgress(){renderHeader(route())}
+// Contador corto del índice lateral (solo secciones con ítems)
+function indexCount(key){
+  const w=weeks[current],i=current;
+  if(key==="quiz")return`${w.quiz.filter((_,q)=>(answers[i]||{})[q]!=null).length}/${w.quiz.length}`;
+  if(key==="practice")return`${w.practice.filter((_,j)=>passed[`${i}-${j}`]).length}/${w.practice.length}`;
+  if(key==="pset")return`${w.pset.filter((_,j)=>done[`${i}-${j}`]).length}/${w.pset.length}`;
+  return null;
+}
+const sectionTitle=key=>key==="project"?"Proyecto · finanzas tracker":SECTIONS[sectionIdx(key)].title;
 
-function block(n,title,...kids){return el("section",{class:"block",id:"s-"+SECTIONS[+n-1].key},el("h3",{tabindex:"-1"},el("span",{class:"n"},n),title),...kids)}
+function scrollToSection(key){
+  const t=document.getElementById("s-"+key);if(!t)return;
+  const bar=document.querySelector(".section-bar");const off=bar&&getComputedStyle(bar).display!=="none"?bar.offsetHeight+8:24;
+  window.scrollTo({top:t.getBoundingClientRect().top+scrollY-off,behavior:reducedMotion()?"auto":"smooth"});
+  (t.querySelector("h2")||t.querySelector("button"))?.focus({preventScroll:true});
+}
+
+// Índice lateral sticky (desktop) y barra de secciones (tablet/móvil)
+function buildIndex(){
+  const n=sectionsDone(current);const cur=currentInView;
+  return el("aside",{class:"section-index",id:"sectionIndex","aria-label":"Secciones de la semana"},
+    el("div",{class:"week-progress"},el("p",{class:"week-progress__label"},`W${current} · AVANCE`),segs(weekSegStates(current,sectionIdx(cur)+1)),el("p",{class:"week-progress__count"},`${n} de 7 secciones`)),
+    el("nav",{"aria-label":"Secciones"},el("ol",{class:"section-index__list"},SECTIONS.map((s,k)=>{
+      const d=sectionDone(current,s.key),c=s.key===cur,count=d?null:indexCount(s.key);
+      return el("li",{},el("a",{class:"section-index__item",href:"#s-"+s.key,"data-state":d?"done":"pending","aria-current":c?"true":null,onclick:e=>{e.preventDefault();scrollToSection(s.key)}},
+        d?el("span",{class:"section-index__mark","aria-hidden":"true"},"✓"):el("span",{class:"section-index__dot","aria-hidden":"true"}),
+        el("span",{class:"section-index__num"},pad2(k+1)),el("span",{},s.short,d?el("span",{class:"visually-hidden"},", hecha"):null),
+        count?el("span",{class:"section-index__count"},count):null));
+    }))),
+    weekLinks("week-links only-desktop"));
+}
+function buildBar(){
+  const cur=currentInView;
+  return el("nav",{class:"section-bar",id:"sectionBar","aria-label":"Secciones de la semana"},SECTIONS.map((s,k)=>{
+    const d=sectionDone(current,s.key),c=s.key===cur;
+    return el("a",{class:"section-chip",href:"#s-"+s.key,"data-state":c?"current":d?"done":"pending","aria-current":c?"true":null,onclick:e=>{e.preventDefault();scrollToSection(s.key)}},
+      d&&!c?"✓":null,pad2(k+1),c?" "+s.short:null,d?el("span",{class:"visually-hidden"},", hecha"):null,!c?el("span",{class:"visually-hidden"}," "+s.short):null);
+  }));
+}
+function weekLinks(cls){
+  const w=weeks[current];
+  return el("div",{class:cls},
+    w.notesUrl?el("a",{href:w.notesUrl,target:"_blank",rel:"noopener"},"Notas de la clase ↗"):null,
+    w.videoUrl?el("a",{href:w.videoUrl,target:"_blank",rel:"noopener"},"Video ↗"):null,
+    w.sources?.length?el("details",{class:"sources"},el("summary",{},`Fuentes oficiales (${w.sources.length})`),
+      el("ul",{},w.sources.map(u=>el("li",{},el("a",{href:u,target:"_blank",rel:"noopener"},u.replace(/^https?:\/\//,"")))))):null);
+}
+// Repinta índice, barra, cabecera y pestañas tras un cambio de estado
+function refreshChrome(){
+  document.getElementById("sectionIndex")?.replaceWith(buildIndex());
+  const bar=buildBar();document.getElementById("sectionBar")?.replaceWith(bar);
+  const chip=bar.querySelector("[aria-current]");if(chip)bar.scrollLeft=chip.offsetLeft-(bar.clientWidth-chip.offsetWidth)/2;
+  document.querySelector(".week-head .segments")?.replaceWith(segs(weekSegStates(current,sectionIdx(currentInView)+1)));
+  renderProgress();
+}
+function setInView(key){
+  if(key===currentInView)return;currentInView=key;
+  document.querySelectorAll(".section-index__item").forEach(a=>{const on=a.getAttribute("href")==="#s-"+key;a.toggleAttribute("aria-current",on);if(on)a.setAttribute("aria-current","true")});
+  const bar=buildBar();document.getElementById("sectionBar")?.replaceWith(bar);
+  const chip=bar.querySelector("[aria-current]");if(chip)bar.scrollLeft=chip.offsetLeft-(bar.clientWidth-chip.offsetWidth)/2;
+}
+
+// Bloque de código de solo lectura con números de línea (mismo aspecto que el editor)
+function codeBlock(code){
+  const lines=String(code).replace(/\n$/,"").split("\n");
+  return el("div",{class:"code-block"},el("ol",{class:"code-block__gutter","aria-hidden":"true"},lines.map((_,k)=>el("li",{},String(k+1)))),
+    el("pre",{class:"code-block__code"},el("code",{},lines.join("\n"))));
+}
+
+// Contenido de cada sección
+function sectionBody(key){
+  const w=weeks[current];
+  switch(key){
+    case "summary":return[el("ul",{class:"section-list"},w.summary.map(s=>el("li",{html:md(s)})))];
+    case "jsToPy":return[el("table",{class:"js-py"},el("thead",{},el("tr",{},el("th",{scope:"col"},"JS"),el("th",{scope:"col"},"Python"),el("th",{scope:"col"},"Ojo"))),
+      el("tbody",{},w.jsToPy.map(r=>el("tr",{},el("td",{"data-label":"JS"},el("code",{},r.js)),el("td",{"data-label":"Python"},el("code",{},r.py)),el("td",{"data-label":"Ojo",html:md(r.note||"")})))))];
+    case "examples":return[
+      ...(w.examples||[]).map(e=>el("div",{class:"example"},e.label?el("p",{class:"example__label",html:md(e.label)}):null,codeBlock(e.code))),
+      w.traps?.length?el("ul",{class:"traps"},w.traps.map(t=>el("li",{},el("span",{class:"traps__label"},"Trampa"),el("span",{html:md(t)})))):null];
+    case "quiz":return[el("div",{class:"quiz"},w.quiz.map((q,qi)=>quizQuestion(q,qi)))];
+    case "pset":return[el("div",{class:"pset"},w.pset.map((p,j)=>psetItem(p,j))),w.submit?el("p",{class:"pset__submit",html:md(w.submit)}):null];
+    case "project":return[el("p",{class:"project__goal",html:md(w.project.goal||"")}),w.project.steps?.length?el("ol",{class:"section-list"},w.project.steps.map(x=>el("li",{html:md(x)}))):null];
+  }
+}
+// "Marcar como hecho" solo en 01, 02, 03 y 07
+const MANUAL=new Set(["summary","jsToPy","examples","project"]);
+function markSectionDone(key){
+  const wp=weekPrefs(current);wp.done??={};wp.done[key]=true;openSections.delete(key);
+  markStudied();setLast(current,sectionIdx(key)+1,0);
+  refreshSections({fade:key});refreshChrome();
+  document.querySelector(`#s-${key} .section-row`)?.focus();
+}
+const plainText=s=>String(s).replace(/[`*]/g,"");
+
+function buildSection(key){
+  const w=weeks[current],k=sectionIdx(key),n=pad2(k+1),d=sectionDone(current,key);
+  if(key==="practice")return buildPractice();
+  const cur=firstOpenSection(current)===k+1;
+  const folded=(d&&!openSections.has(key))||(key==="project"&&!d&&!cur&&!openSections.has(key));
+  if(folded){
+    const upcoming=!d;
+    const right=upcoming?el("span",{class:"section-row__status"},sectionCount(key))
+      :el("span",{class:"section-row__status","data-ok":"true"},"✓ Hecho · ",el("span",{class:"section-row__open"},key==="quiz"?"repetir":"abrir"));
+    const sub=key==="project"?` — ${plainText(w.project.goal||"")}`:` · ${sectionCount(key)}`;
+    return el("section",{class:"section-card",id:"s-"+key,"data-state":upcoming?"upcoming":"done"},
+      el("button",{class:"section-row",type:"button","aria-expanded":"false","aria-controls":`s-${key}-body`,onclick:()=>{
+        if(key==="quiz"&&d){delete answers[current];store.set("cs50p-quiz",answers)}
+        openSections.add(key);const node=buildSection(key);document.getElementById("s-"+key).replaceWith(node);node.querySelector("h2")?.focus();refreshChrome();
+      }},el("span",{class:"num"},n),el("span",{class:"section-row__title"},sectionTitle(key),el("span",{class:"section-row__sub"},sub)),right));
+  }
+  const counter=key==="quiz"||key==="pset"?el("span",{class:"section-card__count"},sectionCount(key)):null;
+  const head=cur&&!d
+    ?[el("div",{class:"section-card__label"},el("span",{},`${n} · Ahora`),counter),el("h2",{class:"section-card__title",id:`s-${key}-title`,tabindex:"-1"},sectionTitle(key))]
+    :[el("div",{class:"section-card__head"},el("div",{class:"section-card__name"},el("span",{class:"num"},n),el("h2",{class:"section-card__title",id:`s-${key}-title`,tabindex:"-1"},sectionTitle(key))),
+        d?el("div",{class:"section-card__done"},el("span",{},"✓ Hecho"),el("button",{class:"btn--small",type:"button","aria-controls":`s-${key}-body`,"aria-expanded":"true",onclick:()=>{openSections.delete(key);const node=buildSection(key);document.getElementById("s-"+key).replaceWith(node);node.querySelector(".section-row")?.focus()}},"Plegar")):counter)];
+  return el("section",{class:"section-card",id:"s-"+key,"data-state":cur&&!d?"current":d?"done":"pending","aria-labelledby":`s-${key}-title`},
+    ...head,
+    el("div",{class:"section-card__body",id:`s-${key}-body`},...sectionBody(key)),
+    MANUAL.has(key)&&!d?el("button",{class:"btn--small section-card__mark",type:"button",onclick:()=>markSectionDone(key)},"Marcar como hecho"):null);
+}
+// Reconstruye las secciones (menos la práctica, para no perder el editor) tras un cambio de estado
+function refreshSections({fade,practice=false}={}){
+  for(const s of SECTIONS){
+    if(s.key==="practice"&&!practice)continue;
+    if(!s.has(weeks[current]))continue;
+    const old=document.getElementById("s-"+s.key);if(!old)continue;
+    const node=buildSection(s.key);old.replaceWith(node);
+    if(s.key===fade&&!reducedMotion()){node.classList.add("is-entering");requestAnimationFrame(()=>requestAnimationFrame(()=>node.classList.remove("is-entering")))}
+  }
+  observeSections();
+}
+
+// Pregunta de quiz (1g fila 3)
+const LETTERS="ABCD";
+const isCodeOption=o=>/`/.test(o)||!/\s/.test(o.trim());
+function quizQuestion(q,qi){
+  const fs=el("fieldset",{class:"quiz-q"});
+  const why=el("p",{class:"quiz-why","aria-live":"polite"});
+  const opts=q.options.map((o,oi)=>el("button",{class:"quiz-opt",type:"button",onclick:()=>{
+    answers[current]={...(answers[current]||{}),[qi]:oi};store.set("cs50p-quiz",answers);
+    markStudied();setLast(current,4,qi);paint();refreshChrome();
+    const c=fs.closest(".section-card")?.querySelector(".section-card__count");if(c)c.textContent=sectionCount("quiz");
+  }},el("span",{class:"quiz-opt__key"},LETTERS[oi]),
+    isCodeOption(o)?el("span",{class:"quiz-opt__text","data-code":"true"},o.replace(/`/g,"")):el("span",{class:"quiz-opt__text",html:md(o)}),
+    el("span",{class:"quiz-opt__flag"})));
+  function paint(){
+    const pick=(answers[current]||{})[qi];const answered=pick!=null;
+    opts.forEach((b,oi)=>{
+      const st=!answered?"idle":oi===q.answer?"correct":oi===pick?"wrong":"rest";
+      b.dataset.state=st;b.disabled=answered;
+      b.querySelector(".quiz-opt__flag").textContent=st==="correct"?"✓ Correcta":st==="wrong"?"✗ Tu respuesta":"";
+    });
+    why.hidden=!answered;
+    if(answered){why.dataset.result=pick===q.answer?"ok":"bad";why.innerHTML=`<strong>Por qué:</strong> ${md(q.why||"")}`}
+  }
+  fs.append(el("legend",{class:"quiz-q__text",html:`<span class="visually-hidden">Pregunta ${qi+1}: </span>${md(q.q)}`}),el("div",{class:"quiz-q__opts"},opts),why);
+  paint();return fs;
+}
+
+// Problema del pset con pistas progresivas (1g fila 5)
+function psetItem(p,j){
+  const key=`${current}-${j}`,wp=weekPrefs(current);
+  const item=el("div",{class:"pset-item","data-done":done[key]?"true":null});
+  const cb=el("input",{type:"checkbox",class:"pset-check",id:"p"+key,"aria-label":"Resuelto: "+p.name});cb.checked=!!done[key];
+  cb.addEventListener("change",()=>{
+    done[key]=cb.checked;store.set("cs50p-done",done);markStudied();setLast(current,6,j);
+    item.toggleAttribute("data-done",cb.checked);if(cb.checked)item.dataset.done="true";
+    const c=item.closest(".section-card")?.querySelector(".section-card__count");if(c)c.textContent=sectionCount("pset");
+    refreshChrome();
+  });
+  const hints=p.hints||[];let expanded=false;
+  const box=el("div",{class:"hints",id:`hints-${key}`,hidden:""});
+  const toggle=hints.length?el("button",{class:"pset-item__hints-toggle",type:"button","aria-expanded":"false","aria-controls":`hints-${key}`},`Pistas (${hints.length})`):el("span");
+  function paintHints(){
+    const shown=Math.max(1,Math.min(hints.length,wp.hintsOpen?.[j]||1));
+    box.textContent="";
+    hints.slice(0,shown).forEach((h,k)=>box.append(el("p",{class:"hints__item"},el("span",{class:"hints__num"},String(k+1)),el("span",{html:md(h)}))));
+    if(shown<hints.length)box.append(el("button",{class:"hints__more",type:"button",onclick:()=>{wp.hintsOpen??={};wp.hintsOpen[j]=shown+1;savePrefs();paintHints();box.querySelectorAll(".hints__item")[shown]?.setAttribute("tabindex","-1");box.querySelectorAll(".hints__item")[shown]?.focus()}},
+      el("span",{class:"hints__num"},String(shown+1)),`Mostrar pista ${shown+1}`));
+  }
+  toggle.addEventListener?.("click",()=>{expanded=!expanded;box.hidden=!expanded;toggle.setAttribute("aria-expanded",String(expanded));toggle.textContent=expanded?"Pistas ▴":`Pistas (${hints.length})`;if(expanded)paintHints()});
+  item.append(cb,el("div",{class:"pset-item__main"},
+    p.url?el("a",{class:"pset-item__name",href:p.url,target:"_blank",rel:"noopener"},p.name,el("span",{class:"pset-item__ext","aria-hidden":"true"}," ↗"),el("span",{class:"visually-hidden"}," (abre en otra pestaña)")):el("span",{class:"pset-item__name"},p.name),
+    el("p",{class:"pset-item__task",html:md(p.task||"")}),box),toggle);
+  return item;
+}
+
+// Práctica (centro de la semana). El editor y los resultados se rehacen en la fase 5.
+function buildPractice(){
+  const w=weeks[current],d=sectionDone(current,"practice");
+  if(d&&!openSections.has("practice")){
+    return el("section",{class:"section-card",id:"s-practice","data-state":"done"},
+      el("button",{class:"section-row",type:"button","aria-expanded":"false","aria-controls":"s-practice-body",onclick:()=>{openSections.add("practice");const node=buildPractice();document.getElementById("s-practice").replaceWith(node);node.querySelector("h2").focus();refreshChrome()}},
+        el("span",{class:"num"},"05"),el("span",{class:"section-row__title"},"Practica aquí",el("span",{class:"section-row__sub"},` · ${sectionCount("practice")}`)),
+        el("span",{class:"section-row__status","data-ok":"true"},"✓ Hecho · ",el("span",{class:"section-row__open"},"abrir"))));
+  }
+  if(practiceSel==null||practiceSel>=w.practice.length){
+    const l=prefs.last;practiceSel=l?.week===current&&l.section===5&&l.item<w.practice.length?l.item:Math.max(0,w.practice.findIndex((_,j)=>!passed[`${current}-${j}`]));
+  }
+  const count=el("span",{class:"practice__count"});
+  const paintCount=()=>{const n=w.practice.filter((_,j)=>passed[`${current}-${j}`]).length;count.innerHTML=`<span class="hide-mobile">${n} de ${w.practice.length} aprobados</span><span class="only-mobile">${n}/${w.practice.length}</span>`};
+  paintCount();
+  const tabs=el("div",{class:"ex-tabs",role:"tablist","aria-label":"Ejercicios"});
+  const panel=el("div",{class:"practice__body",role:"tabpanel",id:"ex-panel"});
+  function paintTabs(){
+    tabs.textContent="";
+    w.practice.forEach((p,j)=>{
+      const ok=passed[`${current}-${j}`],sel=j===practiceSel;
+      tabs.append(el("button",{class:"ex-tab",role:"tab",type:"button",id:`ex-tab-${j}`,"aria-selected":String(sel),"aria-controls":"ex-panel",tabindex:sel?"0":"-1","data-state":ok?"passed":sel?"current":"pending",onclick:()=>select(j)},
+        ok?el("span",{class:"ex-tab__mark","aria-hidden":"true"},"✓"):el("span",{class:"ex-tab__dot","aria-hidden":"true"}),`${j+1} · ${p.name}`,ok?el("span",{class:"visually-hidden"},", aprobado"):null));
+    });
+    panel.setAttribute("aria-labelledby",`ex-tab-${practiceSel}`);
+  }
+  function select(j,focus=true){practiceSel=j;paintTabs();panel.replaceChildren(...practicePanel(w.practice[j],j,onPass));if(focus)tabs.children[j].focus()}
+  tabs.addEventListener("keydown",e=>{
+    const n=w.practice.length;let j=null;
+    if(e.key==="ArrowRight")j=(practiceSel+1)%n;else if(e.key==="ArrowLeft")j=(practiceSel-1+n)%n;else if(e.key==="Home")j=0;else if(e.key==="End")j=n-1;
+    if(j!=null){e.preventDefault();select(j)}
+  });
+  function onPass(){paintCount();paintTabs();refreshChrome()}
+  paintTabs();panel.append(...practicePanel(w.practice[practiceSel],practiceSel,onPass));
+  return el("section",{id:"s-practice",class:"practice","aria-labelledby":"practice-title"},
+    el("header",{class:"practice__head"},el("div",{},el("p",{class:"label practice__label"},"05 · El centro de la semana"),el("h2",{id:"practice-title",tabindex:"-1"},"Practica aquí")),count),
+    tabs,el("div",{id:"s-practice-body"},panel));
+}
+function practicePanel(p,j,onPass){
+  const key=`${current}-${j}`;
+  const ta=el("textarea",{class:"editor",id:"code-"+key,spellcheck:"false",autocapitalize:"off",autocomplete:"off","aria-label":"Código Python: "+p.name});
+  ta.value=codes[key]??p.starter;
+  ta.addEventListener("input",()=>{codes[key]=ta.value;store.set("cs50p-code",codes)});
+  ta.addEventListener("keydown",e=>{
+    if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();check.click()}
+    else if(e.key==="Tab"&&!e.shiftKey){e.preventDefault();ta.setRangeText("    ",ta.selectionStart,ta.selectionEnd,"end");ta.dispatchEvent(new Event("input"))}
+    else if(e.key==="Enter"){const st=ta.selectionStart;const line=ta.value.slice(0,st).split("\n").pop();let ind=line.match(/^\s*/)[0];if(/:\s*$/.test(line))ind+="    ";e.preventDefault();ta.setRangeText("\n"+ind,st,ta.selectionEnd,"end");ta.dispatchEvent(new Event("input"))}
+    else if(e.key==="Escape"){ta.blur()}
+  });
+  const res=el("div",{class:"results","aria-live":"polite"});
+  const stdin=el("input",{class:"stdin",id:"in-"+key,placeholder:"Entradas para Ejecutar, separadas por | (ej: 100|300)","aria-label":"Entradas para Ejecutar"});
+  const check=el("button",{class:"btn--primary",type:"button"},"Comprobar",el("kbd",{class:"hide-mobile"},"⌘↵"));
+  const run=el("button",{class:"btn--secondary",type:"button"},"Ejecutar");
+  // "Volver al inicio" pide confirmación inline
+  const resetBox=el("span",{class:"ex-reset"});
+  function paintReset(){
+    resetBox.replaceChildren(el("button",{class:"btn--ghost",type:"button",onclick:()=>{
+      resetBox.replaceChildren(el("span",{class:"ex-reset__q"},"¿Borrar tu código?"),
+        el("button",{class:"btn--ghost",type:"button",onclick:()=>{ta.value=p.starter;delete codes[key];store.set("cs50p-code",codes);res.textContent="";paintReset();ta.focus()}},"Sí"),
+        el("button",{class:"btn--ghost",type:"button",onclick:()=>{paintReset();resetBox.querySelector("button").focus()}},"No"));
+      resetBox.querySelector("button").focus();
+    }},"Volver al inicio"));
+  }
+  paintReset();
+  // En móvil "Volver al inicio" va debajo del editor; en desktop, al final de la fila de acciones
+  const resetDesk=el("span",{class:"ex-actions__reset"}),resetMobile=el("div",{class:"ex-reset-row"});
+  const placeReset=()=>{if(!resetBox.isConnected&&resetBox.parentNode){mobileMQ.removeEventListener("change",placeReset);return}(mobileMQ.matches?resetMobile:resetDesk).append(resetBox)};
+  placeReset();mobileMQ.addEventListener("change",placeReset);
+  const label=b=>b.firstChild; // nodo de texto del botón (sin el <kbd>)
+  async function busy(b,fn){check.disabled=run.disabled=true;const t=label(b).textContent;label(b).textContent="Corriendo…";try{await fn()}catch(e){res.textContent="";res.append(el("div",{class:"res ko"},"No se pudo cargar Python en el navegador. Revisa tu conexión y vuelve a intentar."))}finally{label(b).textContent=t;check.disabled=run.disabled=false}}
+  check.onclick=()=>busy(check,async()=>{
+    codes[key]=ta.value;store.set("cs50p-code",codes);res.textContent="";let all=true;
+    for(const[i,t]of p.tests.entries()){
+      const r=await runTest(ta.value,t);all=all&&r.pass;
+      const d=el("div",{class:"res "+(r.pass?"ok":"ko")},el("b",{},(r.pass?"✓ ":"✗ ")+`Caso ${i+1}`),t.stdin?.length?el("span",{class:"small"}," · entradas: "+t.stdin.map(x=>JSON.stringify(x)).join(", ")):null);
+      if(!r.pass){d.append(el("div",{class:"lab"},"Esperado al final"),el("pre",{},t.expect),el("div",{class:"lab"},r.err?"Error":"Tu salida"),el("pre",{},r.err||r.out||"(nada)"))}
+      res.append(d);
+    }
+    if(all){passed[key]=true;store.set("cs50p-passed",passed);markStudied();setLast(current,5,j);res.prepend(el("div",{class:"res ok"},el("b",{},"Todo pasa. Ahora intenta el problem set de la semana.")));onPass()}
+  });
+  run.onclick=()=>busy(run,async()=>{
+    codes[key]=ta.value;store.set("cs50p-code",codes);res.textContent="";
+    const ins=stdin.value?stdin.value.split("|"):[];
+    const r=await runPy(ta.value,ins,0);
+    res.append(el("div",{class:"res"+(r.err?" ko":"")},el("div",{class:"lab",style:"margin-top:0"},"Salida"),el("pre",{},(r.out||"")+(r.err?"\n"+r.err:"")||"(nada)")));
+  });
+  return[
+    el("p",{class:"ex-prompt",html:md(p.prompt)}),
+    ta,stdin,
+    resetMobile,
+    el("div",{class:"ex-actions"},check,run,resetDesk),
+    el("p",{class:"practice__note",html:"Este Python del navegador es simplificado (sin archivos, <code>csv</code>, <code>json</code> ni <code>match</code>); los problem sets van en cs50.dev."}),
+    res];
+}
+
+function observeSections(){
+  sectionObserver?.disconnect();
+  // Hasta el primer scroll, la sección actual es la primera sin hacer (no la que cae en mitad de la pantalla al cargar)
+  sectionObserver=new IntersectionObserver(es=>{if(!userScrolled)return;for(const e of es)if(e.isIntersecting)setInView(e.target.id.slice(2))},{rootMargin:"-40% 0px -55% 0px"});
+  SECTIONS.forEach(s=>{const t=document.getElementById("s-"+s.key);if(t)sectionObserver.observe(t)});
+}
 
 function renderWeek(){
-  const main=document.getElementById("main");main.textContent="";main.className="legacy-week";
+  const main=document.getElementById("main");main.textContent="";main.className="app week";
+  sectionObserver?.disconnect();
   const w=weeks[current];
   if(!w){
-    main.append(el("div",{class:"empty"},el("div",{class:"eyebrow"},`Week ${current}`),el("h2",{},WEEK_NAMES[current]),
-      el("p",{},"Cargando el contenido de esta semana…")));
+    main.append(el("div",{class:"week-empty"},el("p",{class:"label"},`Semana ${current}`),el("h1",{},WEEK_NAMES[current]),
+      el("p",{},loaded?"No se pudo cargar el contenido de esta semana.":"Cargando el contenido de esta semana…")));
     return;
   }
-  main.append(el("div",{class:"weekhead"},
-    el("div",{class:"eyebrow"},`Week ${current} · ${w.time||""}`),
-    el("h2",{},w.title||WEEK_NAMES[current]),
-    el("div",{class:"meta"},
-      ...(w.topics||[]).map(t=>el("span",{class:"chip"},t)),
-      w.notesUrl?el("a",{href:w.notesUrl,target:"_blank",rel:"noopener"},"Notas oficiales ↗"):null,
-      w.videoUrl?el("a",{href:w.videoUrl,target:"_blank",rel:"noopener"},"Video ↗"):null,
-      w.sources?.length?el("span",{},`Verificado con ${w.sources.length} páginas oficiales`):null)));
-
-  if(w.summary?.length)main.append(block("01","En corto",el("ul",{class:"tight"},w.summary.map(s=>el("li",{html:md(s)})))));
-
-  if(w.jsToPy?.length){
-    const tb=el("tbody",{},w.jsToPy.map(r=>el("tr",{},el("td",{class:"js",html:`<code>${esc(r.js)}</code>`}),el("td",{class:"py",html:`<code>${esc(r.py)}</code>`}),el("td",{html:md(r.note||"")}))));
-    main.append(block("02","De JavaScript a Python",el("div",{class:"tablewrap"},el("table",{},el("thead",{},el("tr",{},el("th",{},"JS"),el("th",{},"Python"),el("th",{},"Ojo"))),tb))));
-  }
-
-  if(w.examples?.length||w.traps?.length){
-    const kids=[];
-    (w.examples||[]).forEach(e=>{if(e.label)kids.push(el("p",{style:"margin:10px 0 0",html:md(e.label)}));kids.push(el("pre",{},e.code))});
-    (w.traps||[]).forEach(t=>kids.push(el("div",{class:"trap"},el("b",{},"TRAMPA"),el("span",{html:md(t)}))));
-    main.append(block("03","Código clave y trampas",...kids));
-  }
-
-  if(w.quiz?.length){
-    const qa=answers[current]||{};const box=el("div",{class:"quiz"});
-    const score=el("span",{class:"score"});
-    const upd=()=>{const a=answers[current]||{};const n=Object.keys(a).length;const ok=w.quiz.filter((q,i)=>a[i]===q.answer).length;score.textContent=n?`${ok} de ${w.quiz.length} correctas`:`${w.quiz.length} preguntas`};
-    w.quiz.forEach((q,qi)=>{
-      const opts=el("div",{class:"opts"});const why=el("div",{class:"why",html:md(q.why||"")});why.hidden=qa[qi]==null;
-      q.options.forEach((o,oi)=>{
-        const b=el("button",{class:"opt",html:md(o),onclick:()=>{answers[current]={...(answers[current]||{}),[qi]:oi};store.set("cs50p-quiz",answers);markStudied();setLast(current,4,qi);paint();why.hidden=false;upd();renderNav();renderProgress()}});
-        opts.append(b);
-      });
-      function paint(){const pick=(answers[current]||{})[qi];[...opts.children].forEach((b,oi)=>{b.disabled=pick!=null;b.classList.toggle("right",pick!=null&&oi===q.answer);b.classList.toggle("wrong",pick===oi&&oi!==q.answer)})}
-      paint();
-      box.append(el("div",{class:"q"},el("p",{html:`${qi+1}. ${md(q.q)}`}),opts,why));
-    });
-    upd();
-    const reset=el("button",{class:"btn--small",onclick:()=>{delete answers[current];store.set("cs50p-quiz",answers);render()}},"Reiniciar quiz");
-    main.append(block("04","Quiz antes del problem set",el("div",{style:"margin:-4px 0 12px"},score),box,el("div",{style:"margin-top:14px"},reset)));
-  }
-
-  if(w.practice?.length){
-    const kids=[el("p",{class:"small",style:"margin:0 0 12px",html:"Escribe tu código y pulsa <b>Comprobar</b>: se corre aquí mismo contra casos de prueba, como <code>check50</code>. Este Python del navegador es simplificado (sin archivos, <code>csv</code>, <code>json</code> ni <code>match</code>); los problem sets van en cs50.dev."})];
-    w.practice.forEach((p,j)=>kids.push(practiceCard(p,`${current}-${j}`)));
-    main.append(block("05","Practica aquí",...kids));
-  }
-
-  if(w.pset?.length){
-    const list=el("div",{class:"pset"});
-    w.pset.forEach((p,j)=>{
-      const key=`${current}-${j}`;
-      const cb=el("input",{type:"checkbox",id:"p"+key,"aria-label":"Resuelto: "+p.name});cb.checked=!!done[key];
-      const card=el("div",{class:"prob"+(done[key]?" done":"")},cb,
-        el("div",{class:"t"},el("span",{},p.name),p.url?el("a",{href:p.url,target:"_blank",rel:"noopener"},"enunciado ↗"):null),
-        el("div",{class:"d",html:md(p.task||"")}),
-        p.hints?.length?el("details",{},el("summary",{},"Ver pistas"),el("ul",{class:"tight",style:"margin-top:6px"},p.hints.map(h=>el("li",{html:md(h)})))):null);
-      cb.addEventListener("change",()=>{done[key]=cb.checked;store.set("cs50p-done",done);markStudied();setLast(current,6,j);card.classList.toggle("done",cb.checked);renderNav();renderProgress()});
-      list.append(card);
-    });
-    const kids=[list];
-    if(w.submit)kids.unshift(el("p",{style:"margin:0 0 12px;font-size:14.5px;color:var(--ink-2)",html:md(w.submit)}));
-    main.append(block("06","Problem set",...kids));
-  }
-
-  if(w.project){
-    const s=el("section",{class:"block project",id:"s-project"},el("h3",{tabindex:"-1"},el("span",{class:"n"},"07"),"Tu proyecto: finanzas tracker"),
-      el("p",{class:"goal",style:"margin:0",html:md(w.project.goal||"")}),
-      w.project.steps?.length?el("ul",{class:"tight",style:"margin-top:10px"},w.project.steps.map(x=>el("li",{html:md(x)}))):null);
-    main.append(s);
-  }
+  currentInView=SECTIONS[(firstOpenSection(current)??1)-1].key;userScrolled=false;quietUntil=performance.now()+150;
+  const select=el("select",{class:"week-switch__select","aria-label":"Cambiar de semana",onchange:e=>{location.hash="#/w/"+e.target.value}},
+    [...Array(10).keys()].map(i=>el("option",{value:String(i),selected:i===current?"":null,disabled:weeks[i]?null:""},`W${i} · ${weeks[i]?.title||WEEK_NAMES[i]}`)));
+  const head=el("header",{class:"week-head"},
+    el("div",{class:"week-head__mobile only-mobile"},
+      el("div",{class:"week-switch"},el("a",{href:"#/",class:"week-switch__back","aria-label":"Ir a Inicio"},"←"),el("span",{class:"week-switch__label","aria-hidden":"true"},`W${current} ▾`),select),
+      themeButton("theme-toggle theme-toggle--icon")),
+    el("p",{class:"week-head__meta"},`Semana ${current} · ${w.time||""}`),
+    el("h1",{class:"week-head__title"},w.title),
+    el("div",{class:"only-mobile"},segs(weekSegStates(current,sectionIdx(currentInView)+1))),
+    weekLinks("week-links week-links--head below-desktop"));
+  const sections=SECTIONS.filter(s=>s.has(w)).map(s=>buildSection(s.key));
+  main.append(el("div",{class:"week-layout"},buildIndex(),el("div",{class:"week-main"},head,buildBar(),...sections)));
+  observeSections();
 }
 
 // ── Python en el navegador (Skulpt, se carga al primer uso)
@@ -181,43 +443,6 @@ async function runTest(code,t){
   const src=t.code?`__name__ = "student"\n${code}\n\n__name__ = "__main__"\n${t.code}`:code;
   const r=await runPy(src,t.stdin||[],t.code?1:0);
   return{...r,pass:!r.err&&r.out.trimEnd().endsWith(t.expect)};
-}
-function practiceCard(p,key){
-  const card=el("div",{class:"ex"+(passed[key]?" passed":"")});
-  const badge=el("span",{class:"badge"},passed[key]?"aprobado":"pendiente");
-  const ta=el("textarea",{class:"editor",id:"code-"+key,spellcheck:"false","aria-label":"Código: "+p.name});
-  ta.value=codes[key]??p.starter;
-  let saveT;ta.addEventListener("input",()=>{clearTimeout(saveT);saveT=setTimeout(()=>{codes[key]=ta.value;store.set("cs50p-code",codes)},400)});
-  ta.addEventListener("keydown",e=>{
-    if(e.key==="Tab"&&!e.shiftKey){e.preventDefault();ta.setRangeText("    ",ta.selectionStart,ta.selectionEnd,"end")}
-    else if(e.key==="Enter"){const st=ta.selectionStart;const line=ta.value.slice(0,st).split("\n").pop();let ind=line.match(/^\s*/)[0];if(/:\s*$/.test(line))ind+="    ";e.preventDefault();ta.setRangeText("\n"+ind,st,ta.selectionEnd,"end")}
-  });
-  const res=el("div",{class:"results",role:"status"});
-  const stdin=el("input",{class:"stdin",id:"in-"+key,placeholder:"Entradas para Ejecutar, separadas por | (ej: 100|300)"});
-  const check=el("button",{class:"btn--primary"},"Comprobar");
-  const run=el("button",{class:"btn--secondary"},"Ejecutar");
-  const reset=el("button",{class:"btn--ghost",style:"margin-left:auto"},"Volver al inicio");
-  async function busy(b,fn){check.disabled=run.disabled=true;const t=b.textContent;b.textContent="Corriendo…";try{await fn()}catch(e){res.textContent="";res.append(el("div",{class:"res ko"},"No se pudo cargar Python en el navegador. Revisa tu conexión y vuelve a intentar."))}finally{b.textContent=t;check.disabled=run.disabled=false}}
-  check.onclick=()=>busy(check,async()=>{
-    codes[key]=ta.value;store.set("cs50p-code",codes);res.textContent="";let all=true;
-    const [wk,j]=key.split("-").map(Number);setLast(wk,5,j);
-    for(const[i,t]of p.tests.entries()){
-      const r=await runTest(ta.value,t);all=all&&r.pass;
-      const d=el("div",{class:"res "+(r.pass?"ok":"ko")},el("b",{},(r.pass?"✓ ":"✗ ")+`Caso ${i+1}`),t.stdin?.length?el("span",{class:"small"}," · entradas: "+t.stdin.map(x=>JSON.stringify(x)).join(", ")):null);
-      if(!r.pass){d.append(el("div",{class:"lab"},"Esperado al final"),el("pre",{},t.expect),el("div",{class:"lab"},r.err?"Error":"Tu salida"),el("pre",{},r.err||r.out||"(nada)"))}
-      res.append(d);
-    }
-    if(all){passed[key]=true;store.set("cs50p-passed",passed);markStudied();card.classList.add("passed");badge.textContent="aprobado";res.prepend(el("div",{class:"res ok"},el("b",{},"Todo pasa. Ahora intenta el problem set de la semana.")));renderNav();renderProgress()}
-  });
-  run.onclick=()=>busy(run,async()=>{
-    codes[key]=ta.value;store.set("cs50p-code",codes);res.textContent="";
-    const ins=stdin.value?stdin.value.split("|"):[];
-    const r=await runPy(ta.value,ins,0);
-    res.append(el("div",{class:"res"+(r.err?" ko":"")},el("div",{class:"lab",style:"margin-top:0"},"Salida"),el("pre",{},(r.out||"")+(r.err?"\n"+r.err:"")||"(nada)")));
-  });
-  reset.onclick=()=>{ta.value=p.starter;delete codes[key];store.set("cs50p-code",codes);res.textContent=""};
-  card.append(el("div",{class:"t"},el("span",{},p.name),badge),el("p",{class:"p",html:md(p.prompt)}),ta,stdin,el("div",{class:"row"},check,run,reset),res);
-  return card;
 }
 // ── Inicio
 const DAY_LETTERS=["L","M","X","J","V","S","D"];
@@ -248,7 +473,7 @@ const segs=(states,cls="segments")=>el("div",{class:cls,"aria-hidden":"true"},st
 const weekSegStates=(i,cur)=>SECTIONS.map((s,k)=>sectionDone(i,s.key)?"done":k+1===cur?"current":"pending");
 
 function renderHome(){
-  const main=document.getElementById("main");main.textContent="";main.className="home";
+  const main=document.getElementById("main");main.textContent="";main.className="app home";
   const top=el("div",{class:"home__top"});
   // Continuar
   const t=continueTarget();
@@ -310,25 +535,36 @@ function renderHome(){
 // ── Tema: sin elección sigue al sistema; el botón alterna claro/oscuro según lo que se ve
 const darkMQ=matchMedia("(prefers-color-scheme: dark)");
 const shownTheme=()=>prefs.theme==="light"||prefs.theme==="dark"?prefs.theme:darkMQ.matches?"dark":"light";
+function toggleTheme(){prefs.theme=shownTheme()==="dark"?"light":"dark";savePrefs();applyTheme()}
+function paintThemeButton(b){
+  const label=shownTheme()==="dark"?"Modo claro":"Modo oscuro";
+  b.querySelector(".theme-toggle__text").textContent=label;b.setAttribute("aria-label",label);b.dataset.shown=shownTheme();
+}
 function applyTheme(){
   if(prefs.theme==="light"||prefs.theme==="dark")document.documentElement.dataset.theme=prefs.theme;else delete document.documentElement.dataset.theme;
-  document.getElementById("themeToggle").textContent=shownTheme()==="dark"?"Modo claro":"Modo oscuro";
+  document.querySelectorAll(".theme-toggle").forEach(paintThemeButton);
 }
-document.getElementById("themeToggle").addEventListener("click",()=>{prefs.theme=shownTheme()==="dark"?"light":"dark";savePrefs();applyTheme()});
+// Copia del botón del header (la vista de semana en móvil no muestra el header)
+function themeButton(cls){const b=document.getElementById("themeToggle").cloneNode(true);b.removeAttribute("id");b.className=cls;b.addEventListener("click",toggleTheme);paintThemeButton(b);return b}
+document.getElementById("themeToggle").addEventListener("click",toggleTheme);
 darkMQ.addEventListener("change",applyTheme);
 applyTheme();
 
 function render(){
   const r=route();
   if(r.name==="week"){
+    if(current!==r.week){openSections=new Set();practiceSel=null}
     current=r.week;
-    if(loaded&&weeks[current]&&prefs.last?.week!==current)setLast(current,firstOpenSection(current)??1);
-    renderNav();renderWeek();
-    if(pendingScroll){const t=document.getElementById("s-"+pendingScroll);pendingScroll=null;if(t){t.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});t.querySelector("h3")?.focus({preventScroll:true})}}
-  }else renderHome();
-  renderHeader(r);
+    renderWeek();
+    if(pendingScroll){const k=pendingScroll;pendingScroll=null;scrollToSection(k)}
+  }else{sectionObserver?.disconnect();renderHome()}
+  renderHeader(r);renderTabs();
 }
-addEventListener("hashchange",()=>{const jump=!!pendingScroll;render();if(!jump)scrollTo(0,0)});
+addEventListener("hashchange",()=>{
+  if(!/^(#\/.*|#w\d|#?)$/.test(location.hash))return; // anclas internas (#main…) no cambian de vista
+  const jump=!!pendingScroll;render();if(!jump)scrollTo(0,0);
+});
+document.querySelector(".skip-link").addEventListener("click",e=>{e.preventDefault();document.getElementById("main").focus()});
 render();
 
 // Carga las 10 semanas desde data/w0.json … data/w9.json
