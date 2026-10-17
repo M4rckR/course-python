@@ -222,6 +222,34 @@ function buildFlow(){
   });
   return nav;
 }
+// Fin de semana (§20): qué falta o "Siguiente semana", y el pie anterior/siguiente (teclas [ y ])
+function buildWeekEnd(){
+  const i=current,vis=visibleSections(i),pending=vis.filter(s=>!sectionDone(i,s.key)),next=i<9?i+1:null,prev=i>0?i-1:null;
+  const go=key=>e=>{e.preventDefault();scrollToSection(key)};
+  let block;
+  if(pending.length){
+    block=el("section",{class:"week-end week-end--pending","aria-labelledby":"week-end-t"},
+      el("h2",{class:"week-end__title",id:"week-end-t"},`Te faltan ${pending.length} ${pending.length===1?"sección":"secciones"}`),
+      el("div",{class:"week-end__chips"},pending.map((s,k)=>{const c=indexCount(s.key);
+        return el("a",{class:"week-end__chip","data-first":k===0?"true":null,href:"#s-"+s.key,onclick:go(s.key)},`${secNum(i,s.key)} ${s.short}${c?` · ${c}`:""}`)})),
+      next!=null&&weeks[next]?el("p",{class:"week-end__foot"},`Puedes abrir W${next} igual: `,el("a",{href:"#/w/"+next},`ir a W${next}`)):null);
+  }else{
+    const total=vis.length;
+    block=el("section",{class:"week-end week-end--done","aria-labelledby":"week-end-t"},
+      el("div",{},el("p",{class:"week-end__count"},`W${i} · ${total}/${total} ✓`),
+        el("h2",{class:"week-end__next-title",id:"week-end-t"},next==null?"Curso terminado":`Siguiente: ${weeks[next]?.title||WEEK_NAMES[next]}`)),
+      next==null?null:weeks[next]?el("a",{class:"btn--primary week-end__btn",href:"#/w/"+next},"Siguiente semana →")
+        :el("div",{class:"week-end__off"},el("button",{class:"btn--primary week-end__btn",type:"button",disabled:""},"Siguiente semana →"),el("p",{},`W${next} aún no está cargada`)));
+  }
+  const cell=(j,dir)=>{
+    if(j==null)return el("span",{class:"week-pager__cell"});
+    const lab=dir<0?`← Anterior · W${j}`:`Siguiente · W${j} →`,title=weeks[j]?.title||WEEK_NAMES[j];
+    const kids=[el("span",{class:"week-pager__label"},lab),el("span",{class:"week-pager__title"},weeks[j]?title:"sin cargar")];
+    return weeks[j]?el("a",{class:"week-pager__cell","data-dir":dir<0?"prev":"next",href:"#/w/"+j},...kids)
+      :el("span",{class:"week-pager__cell","data-dir":dir<0?"prev":"next","aria-disabled":"true"},...kids);
+  };
+  return el("div",{class:"week-end-wrap",id:"weekEnd"},block,el("nav",{class:"week-pager","aria-label":"Semana anterior y siguiente"},cell(prev,-1),cell(next,1)));
+}
 // Repinta índice, barra, cabecera y pestañas tras un cambio de estado
 let weekWasComplete=false;
 function refreshChrome(){
@@ -234,6 +262,7 @@ function refreshChrome(){
   const bar=buildBar();document.getElementById("sectionBar")?.replaceWith(bar);
   const chip=bar.querySelector("[aria-current]");if(chip)bar.scrollLeft=chip.offsetLeft-(bar.clientWidth-chip.offsetWidth)/2;
   document.getElementById("cs50Flow")?.replaceWith(buildFlow());
+  document.getElementById("weekEnd")?.replaceWith(buildWeekEnd());
   renderProgress();
 }
 function setInView(key){
@@ -930,7 +959,7 @@ function renderWeek(){
     weekLinks("week-links week-links--head below-desktop"),
     bannerActive(current)?weekBanner(current):null);
   const sections=SECTIONS.filter(s=>s.has(w)).map(s=>buildSection(s.key));
-  main.append(el("div",{class:"week-layout"},buildIndex(),el("div",{class:"week-main"},head,buildBar(),...sections)));
+  main.append(el("div",{class:"week-layout"},buildIndex(),el("div",{class:"week-main"},head,buildBar(),...sections,buildWeekEnd())));
   observeSections();
 }
 
@@ -1073,6 +1102,7 @@ addEventListener("keydown",e=>{
   if(e.metaKey||e.ctrlKey||e.altKey||typing(e.target))return;
   if(!inFocus()){
     if((e.key==="f"||e.key==="F")&&route().name==="week"&&weeks[current]){e.preventDefault();enterFocus()}
+    else if((e.key==="["||e.key==="]")&&route().name==="week"){const j=current+(e.key==="]"?1:-1);if(j>=0&&j<=9&&weeks[j]){e.preventDefault();location.hash="#/w/"+j}}
     return;
   }
   if(e.key==="Escape"){e.preventDefault();exitFocus()}
