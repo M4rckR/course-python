@@ -260,8 +260,8 @@ a.week-tab:hover{color:var(--ink);background:var(--surface-2)}
 .js-py{border-collapse:collapse;width:100%;font-size:var(--fs-body)}
 .js-py th{text-align:left;font:var(--fw-medium) var(--fs-micro) var(--font-mono);letter-spacing:var(--ls-label);color:var(--ink-2);padding:6px 10px 6px 0;border-bottom:var(--border)}
 .js-py td{padding:10px 10px 10px 0;border-bottom:var(--border);vertical-align:top}
-.js-py td code{font:var(--fw-regular) var(--fs-code-sm)/1.5 var(--font-mono);background:none;padding:0;white-space:pre}
-.js-py td:first-child code{color:var(--ink-2)}
+.js-py td > code{font:var(--fw-regular) var(--fs-code-sm)/1.5 var(--font-mono);background:none;padding:0;white-space:pre}
+.js-py td:first-child > code{color:var(--ink-2)}
 .js-py tr:last-child td{border-bottom:0}
 .example{display:flex;flex-direction:column;gap:var(--space-2)}
 .example__label{margin:0}
@@ -294,7 +294,8 @@ a.week-tab:hover{color:var(--ink);background:var(--surface-2)}
 
 /* Problem set (1g fila 5) */
 .pset{display:flex;flex-direction:column}
-.pset-item{display:grid;grid-template-columns:28px 1fr auto;gap:var(--space-3);padding:var(--space-3) 0;border-top:var(--border);align-items:start}
+.pset-item__hit{display:none}
+.pset-item{position:relative;display:grid;grid-template-columns:28px 1fr auto;gap:var(--space-3);padding:var(--space-3) 0;border-top:var(--border);align-items:start}
 .pset-check{appearance:none;-webkit-appearance:none;width:20px;height:20px;margin:2px 0 0;border:1.5px solid var(--ink-2);border-radius:var(--radius-check);background:transparent;display:grid;place-items:center;cursor:pointer}
 .pset-check:checked{background:var(--ok);border-color:var(--ok)}
 .pset-check:checked::after{content:"✓";font:var(--fw-bold) 14px/1 var(--font-body);color:var(--on-ok)}
@@ -381,6 +382,9 @@ a.week-tab:hover{color:var(--ink);background:var(--surface-2)}
 .case--fail .case__row{display:grid;grid-template-columns:24px 80px 1fr;gap:var(--space-3);align-items:center}
 .case--fail .case__name{color:var(--ink);font-weight:var(--fw-bold)}
 .case--fail .case__io{color:var(--ink)}
+.case__rule{margin:10px 0 0 36px;font-size:var(--fs-meta);color:var(--ink-2)}
+.case__expect{white-space:pre-wrap;color:var(--ink)}
+.err-foot__hint{margin:8px 0 0;font-size:var(--fs-meta);color:var(--ink)}
 .case__chip{background:var(--surface-2);padding:1px 6px;border-radius:var(--radius-code)}
 .diff{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 0 36px;font:var(--fw-regular) var(--fs-code)/1.5 var(--font-mono)}
 .diff__panel{border:var(--border);border-radius:var(--radius-sm);background:var(--bg);overflow:hidden;min-width:0}
@@ -518,7 +522,7 @@ html[data-mode="focus"] .app-header,html[data-mode="focus"] .week-tabs,html[data
   .js-py tr{padding:10px 0;border-bottom:var(--border)}
   .js-py td{border:0;padding:2px 0;display:grid;grid-template-columns:56px minmax(0,1fr);gap:var(--space-2)}
   .js-py td::before{content:attr(data-label);font:var(--fw-medium) var(--fs-micro)/1.9 var(--font-mono);color:var(--ink-2)}
-  .js-py td code{white-space:pre-wrap}
+  .js-py td > code{white-space:pre-wrap}
   .code-block{--gutter-w:34px;font-size:var(--fs-code-sm);line-height:var(--lh-code-sm);padding:10px 0}
   .code-block__gutter{padding-right:9px}
   .code-block__code{padding:0 10px}
@@ -554,6 +558,7 @@ html[data-mode="focus"] .app-header,html[data-mode="focus"] .week-tabs,html[data
   .results__note{display:none}
   .results__segs>span{width:20px}
   .case,.case--fail .case__row{grid-template-columns:20px 64px 1fr;gap:var(--space-2)}
+  .case__rule{margin-left:0}
   .diff{grid-template-columns:76px minmax(0,1fr);gap:2px 0;margin:8px 0 0;font-size:var(--fs-code-sm)}
   .diff__panel,.diff__panel--bad{display:contents}
   .diff__title{padding:0;border:0;text-transform:none;letter-spacing:0;font:inherit;color:var(--ink-2)}
@@ -592,6 +597,11 @@ html[data-mode="focus"] .app-header,html[data-mode="focus"] .week-tabs,html[data
   .focus__hint{left:0;right:auto}
   /* Tap mínimo 44px */
   .btn--small,.btn--ghost,.stdin{min-height:var(--tap-min)}
+  /* Área táctil ampliada sin mover el diseño */
+  .app-logo{display:inline-block;line-height:var(--tap-min);margin-block:-12px}
+  .pset-item__name{display:inline-block;padding:12px 0;margin:-12px 0}
+  .hints__more{padding:11px 0;margin:-11px 0}
+  .pset-item__hit{display:block;position:absolute;left:-12px;top:0;width:var(--tap-min);height:var(--tap-min);cursor:pointer}
   .stdin{font-size:16px}
   .week-links--head a,.week-links--head summary{display:inline-flex;align-items:center;min-height:var(--tap-min)}
   .week-links--head{gap:0 var(--space-4)}

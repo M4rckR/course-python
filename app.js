@@ -194,7 +194,7 @@ function sectionBody(key){
   switch(key){
     case "summary":return[el("ul",{class:"section-list"},w.summary.map(s=>el("li",{html:md(s)})))];
     case "jsToPy":return[el("table",{class:"js-py"},el("thead",{},el("tr",{},el("th",{scope:"col"},"JS"),el("th",{scope:"col"},"Python"),el("th",{scope:"col"},"Ojo"))),
-      el("tbody",{},w.jsToPy.map(r=>el("tr",{},el("td",{"data-label":"JS"},el("code",{},r.js)),el("td",{"data-label":"Python"},el("code",{},r.py)),el("td",{"data-label":"Ojo",html:md(r.note||"")})))))];
+      el("tbody",{},w.jsToPy.map(r=>el("tr",{},el("td",{"data-label":"JS"},el("code",{},r.js)),el("td",{"data-label":"Python"},el("code",{},r.py)),el("td",{"data-label":"Ojo"},el("span",{html:md(r.note||"")}))))))];
     case "examples":return[
       ...(w.examples||[]).map(e=>el("div",{class:"example"},e.label?el("p",{class:"example__label",html:md(e.label)}):null,codeBlock(e.code))),
       w.traps?.length?el("ul",{class:"traps"},w.traps.map(t=>el("li",{},el("span",{class:"traps__label"},"Trampa"),el("span",{html:md(t)})))):null];
@@ -328,6 +328,8 @@ function psetItem(p,j){
       el("span",{class:"hints__num"},String(shown+1)),`Mostrar pista ${shown+1}`));
   }
   toggle.addEventListener?.("click",()=>{expanded=!expanded;box.hidden=!expanded;toggle.setAttribute("aria-expanded",String(expanded));toggle.textContent=expanded?"Pistas ▴":`Pistas (${hints.length})`;if(expanded)paintHints()});
+  // Área táctil de 44×44 alrededor del checkbox (el cuadro visible mide 20)
+  item.append(el("label",{class:"pset-item__hit",for:"p"+key,"aria-hidden":"true"}));
   item.append(cb,el("div",{class:"pset-item__main"},
     p.url?el("a",{class:"pset-item__name",href:p.url,target:"_blank",rel:"noopener"},p.name,el("span",{class:"pset-item__ext","aria-hidden":"true"}," ↗"),el("span",{class:"visually-hidden"}," (abre en otra pestaña)")):el("span",{class:"pset-item__name"},p.name),
     el("p",{class:"pset-item__task",html:md(p.task||"")}),box),toggle);
@@ -561,7 +563,9 @@ function renderResults(box,{p,results,code,next}){
       inStudent?errorSnippet(code,inf.line-1,inf.token):null,
       el("div",{class:"err-foot"},el("p",{class:"err-foot__type"},el("span",{class:"err-foot__name"},inf.type),inStudent?` · línea ${inf.line}`:` · en la prueba del caso ${firstFail+1}`),
         el("p",{class:"err-foot__msg"},inf.msg),
-        !inStudent&&p.tests[firstFail].code?el("p",{class:"err-foot__msg"},"Prueba: ",el("code",{},p.tests[firstFail].code)):null)));
+        !inStudent&&p.tests[firstFail].code?el("p",{class:"err-foot__msg"},"Prueba: ",el("code",{},p.tests[firstFail].code)):null,
+        // NameError dentro de la prueba: casi siempre la función no existe o se llama distinto
+        !inStudent&&inf.type==="NameError"&&inf.token?el("p",{class:"err-foot__hint",html:md(`¿Definiste la función \`${inf.token}\`? Revisa que se llame igual que en el enunciado.`)}):null)));
     return inStudent?inf:null;
   }
   const list=el("div",{class:"results"},
@@ -585,6 +589,8 @@ function renderResults(box,{p,results,code,next}){
     list.append(el("div",{class:"case case--fail"},
       el("div",{class:"case__row"},el("span",{class:"case__mark","aria-label":"Falla"},"✗"),el("span",{class:"case__name"},`Caso ${i+1}`),
         el("span",{class:"case__io"},t.code?"":"entrada ",el("span",{class:"case__chip"},caseInput(t)))),
+      // La regla real del test, literal, aunque el contexto se arme con la salida obtenida
+      el("p",{class:"case__rule"},"El test pide que la salida termine en: ",el("code",{class:"case__expect"},t.expect)),
       el("div",{class:"diff"},
         el("div",{class:"diff__panel"},el("p",{class:"diff__title"},"Esperado"),el("pre",{class:"diff__body",html:renderMark(d.a,"diff__mark--ok")})),
         el("div",{class:"diff__panel diff__panel--bad"},el("p",{class:"diff__title"},"Obtenido"),el("pre",{class:"diff__body",html:b.length?renderMark(d.b,"diff__mark--bad"):'<span class="ws">(sin salida)</span>'})))));
